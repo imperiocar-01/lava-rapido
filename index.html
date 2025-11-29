@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ImpérioCar-01 | Agendamento VIP</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800;900&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --gold: #FFD700;
+            --gold-dark: #B8860B;
+            --black: #0a0a0a;
+            --gray-dark: #141414;
+            --gray-light: #2a2a2a;
+            --whatsapp: #25D366;
+            --danger: #ff4444;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Montserrat', sans-serif; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            background-color: var(--black);
+            color: white;
+            padding-bottom: 140px;
+        }
+
+        /* HEADER */
+        .header {
+            background: linear-gradient(to bottom, rgba(0,0,0,0.7), var(--black)), url('https://images.unsplash.com/photo-1601362840469-51e4d8d58785?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80');
+            background-size: cover;
+            background-position: center;
+            text-align: center;
+            padding: 40px 20px 20px 20px;
+            border-bottom: 3px solid var(--gold);
+        }
+
+        .logo { cursor: pointer; user-select: none; }
+        .logo h1 {
+            color: var(--gold);
+            font-weight: 900;
+            font-size: 1.8rem;
+            text-transform: uppercase;
+            text-shadow: 0px 0px 10px rgba(0,0,0,0.9);
+        }
+        .logo p { font-size: 0.8rem; letter-spacing: 2px; color: #ddd; }
+
+        /* CONTAINER */
+        .container { width: 100%; max-width: 600px; margin: 0 auto; padding: 15px; }
+
+        /* GALERIA CARROSSEL */
+        .gallery-container {
+            position: relative; width: 100%; height: 220px;
+            border-radius: 10px; overflow: hidden; border: 2px solid var(--gold);
+            margin-bottom: 25px; background: #000;
+        }
+        .gallery-slide {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            opacity: 0; transition: opacity 1s ease-in-out; object-fit: cover;
+        }
+        .gallery-slide.active { opacity: 1; }
+        .gallery-caption {
+            position: absolute; bottom: 10px; right: 10px;
+            background: rgba(0,0,0,0.7); color: var(--gold);
+            padding: 5px 10px; border-radius: 4px;
+            font-size: 0.8rem; font-weight: bold;
+            display: flex; align-items: center; gap: 5px;
+        }
+
+        /* AVISO */
+        .warning-box {
+            background-color: rgba(184, 134, 11, 0.15); border: 1px solid var(--gold-dark);
+            color: #ddd; padding: 15px; border-radius: 8px; font-size: 0.85rem;
+            margin-bottom: 20px; text-align: center; line-height: 1.5;
+        }
+        .warning-box strong { color: var(--gold); text-transform: uppercase; }
+
+        /* TÍTULOS */
+        .section-title {
+            font-size: 1rem; color: var(--gold); margin: 25px 0 10px 0;
+            text-transform: uppercase; font-weight: 800; display: flex;
+            align-items: center; gap: 10px;
+        }
+        .section-title::after { content: ''; flex: 1; height: 1px; background: #333; }
+
+        /* DATA */
+        .date-selector { display: flex; gap: 10px; margin-bottom: 15px; }
+        .date-btn {
+            flex: 1; padding: 15px; background-color: var(--gray-light);
+            border: 1px solid #444; color: #ccc; border-radius: 8px;
+            font-weight: bold; font-size: 0.9rem; text-transform: uppercase;
+            cursor: pointer; transition: 0.2s; line-height: 1.4;
+        }
+        .date-btn.selected {
+            background-color: var(--gold); color: var(--black);
+            border-color: var(--gold); box-shadow: 0 0 15px rgba(255, 215, 0, 0.2);
+        }
+        .date-subtext { font-size: 0.75rem; display: block; font-weight: normal; margin-top: 4px; }
+
+        /* INPUTS */
+        select, .payment-select {
+            width: 100%; padding: 15px; background-color: var(--gray-light);
+            border: 1px solid #333; color: white; border-radius: 8px;
+            font-size: 1rem; outline: none; appearance: none;
+        }
+        select:focus { border-color: var(--gold); }
+
+        /* GRID HORÁRIOS */
+        .time-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        @media (max-width: 380px) { .time-grid { grid-template-columns: repeat(3, 1fr); } }
+
+        .time-btn {
+            background-color: var(--gray-light); border: 1px solid #444; color: #ccc;
+            padding: 12px 5px; border-radius: 6px; font-size: 0.85rem; cursor: pointer;
+            text-align: center; transition: 0.2s;
+        }
+        .time-btn.selected {
+            background-color: var(--gold); color: var(--black); border-color: var(--gold);
+            font-weight: 900; box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+        }
+        .time-btn.disabled {
+            background-color: #111; color: #444; border-color: #222;
+            cursor: not-allowed; text-decoration: line-through;
+        }
+        
+        .encaixe-btn {
+            grid-column: 1 / -1; background-color: rgba(255, 68, 68, 0.1);
+            border-color: var(--danger); color: #ffaaaa;
+        }
+        .encaixe-btn.selected {
+            background-color: var(--danger); color: white; border-color: var(--danger); box-shadow: none;
+        }
+
+        /* SERVIÇOS */
+        .service-item {
+            display: flex; justify-content: space-between; align-items: center;
+            background-color: var(--gray-light); padding: 15px; border-radius: 10px;
+            border: 1px solid #333; margin-bottom: 10px; cursor: pointer;
+        }
+        .service-item input { margin-right: 15px; transform: scale(1.3); accent-color: var(--gold); }
+        .price-tag { color: var(--gold); font-weight: bold; }
+
+        /* ENDEREÇO */
+        .location-card {
+            background: #151515; padding: 15px; border-radius: 8px; margin-top: 30px;
+            border-left: 4px solid var(--gold); font-size: 0.9rem; color: #aaa;
+        }
+
+        /* DIREITOS */
+        .copyright {
+            text-align: center; color: white; font-size: 1rem; margin-top: 40px;
+            margin-bottom: 20px; font-weight: bold; line-height: 1.5; letter-spacing: 0.5px;
+        }
+
+        /* RODAPÉ FLUTUANTE */
+        .sticky-footer {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            background-color: rgba(0,0,0,0.95); padding: 15px;
+            border-top: 1px solid #333; display: flex; flex-direction: column;
+            align-items: center; backdrop-filter: blur(5px); z-index: 100;
+        }
+        .total-info { font-size: 0.9rem; color: #ccc; margin-bottom: 10px; text-align: center; }
+        .total-price { color: var(--gold); font-size: 1.4rem; font-weight: 900; }
+        .btn-whatsapp {
+            background-color: var(--whatsapp); color: white; text-decoration: none;
+            padding: 16px; border-radius: 50px; font-weight: 800; font-size: 1rem;
+            width: 100%; text-align: center; text-transform: uppercase;
+            box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3); display: flex;
+            justify-content: center; align-items: center; gap: 10px;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
+
+        /* --- ADMIN --- */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 2000; align-items: center; justify-content: center;
+        }
+        .modal-content {
+            background: #1a1a1a; padding: 20px; border-radius: 10px; border: 2px solid var(--gold);
+            width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; text-align: center;
+        }
+        .admin-input { width: 100%; padding: 10px; margin: 10px 0; background: #333; border: 1px solid #555; color: white; border-radius: 5px; }
+        .admin-btn {
+            background: var(--gold); color: black; border: none; padding: 12px; font-weight: bold; border-radius: 5px; cursor: pointer; margin-top: 10px; width: 100%; display: flex; justify-content: center; align-items: center; gap: 8px;
+        }
+        .admin-btn-danger { background: var(--danger); color: white; }
+        
+        .admin-photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; margin-bottom: 20px; }
+        .admin-photo-item { position: relative; height: 80px; border-radius: 5px; overflow: hidden; border: 1px solid #444; }
+        .admin-photo-item img { width: 100%; height: 100%; object-fit: cover; }
+        .delete-btn { position: absolute; top: 0; right: 0; width: 25px; height: 25px; background-color: rgba(255, 0, 0, 0.9); color: white; border: none; display: flex; justify-content: center; align-items: center; cursor: pointer; font-size: 12px; }
+        
+        .price-edit-row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; text-align: left; }
+        .price-edit-row label { flex: 1; font-size: 0.8rem; color: #ccc; }
+        .price-edit-row input { width: 80px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="logo" id="crownLogo">
+            <i class="fas fa-crown" style="color: var(--gold); font-size: 2.5rem; margin-bottom: 10px;"></i>
+            <h1>ImpérioCar-01</h1>
+            <p>LAVA-RÁPIDO & ESTÉTICA</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- VITRINE -->
+        <div class="section-title"><i class="fas fa-star"></i> VITRINE (VEÍCULOS PRONTOS)</div>
+        <div class="gallery-container" id="galleryContainer">
+            <div class="gallery-caption">Resultado Final ✨</div>
+        </div>
+
+        <!-- AVISO DE PRÉ-RESERVA -->
+        <div class="warning-box">
+            <i class="fas fa-info-circle" style="color: var(--gold);"></i> <strong>SISTEMA DE PRÉ-RESERVA</strong><br>
+            Para evitar conflitos, seu agendamento será confirmado pelo atendente via WhatsApp.
+        </div>
+
+        <form id="bookingForm">
+            <!-- 1. DATA -->
+            <div class="section-title"><i class="far fa-calendar-alt"></i> ESCOLHA O DIA</div>
+            <div class="date-selector">
+                <button type="button" class="date-btn selected" id="btnToday" onclick="selectDate('hoje')">
+                    HOJE<br><span id="labelToday" class="date-subtext">--/--</span>
+                </button>
+                <button type="button" class="date-btn" id="btnTomorrow" onclick="selectDate('amanha')">
+                    AMANHÃ<br><span id="labelTomorrow" class="date-subtext">--/--</span>
+                </button>
+            </div>
+
+            <!-- 2. VEÍCULO -->
+            <div class="section-title"><i class="fas fa-car"></i> SEU VEÍCULO</div>
+            <select id="carSize" onchange="calculateTotal()">
+                <option value="pequeno">Carro Pequeno (Hatch)</option>
+                <option value="medio" selected>Carro Médio (Sedan)</option>
+                <option value="grande">Carro Grande (SUV/Pick-up)</option>
+                <option value="moto">Moto</option>
+            </select>
+
+            <!-- 3. HORÁRIOS -->
+            <div class="section-title"><i class="far fa-clock"></i> ESCOLHA O HORÁRIO</div>
+            <div class="time-grid" id="timeSlotsContainer"></div>
+            <p style="font-size: 0.75rem; color: #666; margin-top: 5px; text-align: center;">*Horários passados são bloqueados automaticamente.</p>
+
+            <!-- 4. SERVIÇOS -->
+            <div class="section-title"><i class="fas fa-spray-can"></i> SERVIÇO DESEJADO</div>
+            <label class="service-item">
+                <div style="display:flex; align-items:center;">
+                    <input type="radio" name="service" value="ducha" onchange="calculateTotal()">
+                    <div><span style="font-weight:bold;">Só Ducha</span><br><span style="font-size:0.8rem; color:#888;">Externa rápida</span></div>
+                </div>
+                <span class="price-tag" id="price-ducha">--</span>
+            </label>
+            <label class="service-item">
+                <div style="display:flex; align-items:center;">
+                    <input type="radio" name="service" value="simples" checked onchange="calculateTotal()">
+                    <div><span style="font-weight:bold;">Lavagem Simples</span><br><span style="font-size:0.8rem; color:#888;">Int/Ext + Aspirar</span></div>
+                </div>
+                <span class="price-tag" id="price-simples">--</span>
+            </label>
+            <label class="service-item">
+                <div style="display:flex; align-items:center;">
+                    <input type="radio" name="service" value="cera" onchange="calculateTotal()">
+                    <div><span style="font-weight:bold;">Lavagem c/ Cera</span><br><span style="font-size:0.8rem; color:#888;">Completa + Cera</span></div>
+                </div>
+                <span class="price-tag" id="price-cera">--</span>
+            </label>
+            <label class="service-item">
+                <div style="display:flex; align-items:center;">
+                    <input type="radio" name="service" value="higienizacao" onchange="calculateTotal()">
+                    <div><span style="font-weight:bold;">Higienização</span><br><span style="font-size:0.8rem; color:#888;">Interna Profunda</span></div>
+                </div>
+                <span class="price-tag" id="price-higienizacao">--</span>
+            </label>
+
+            <!-- 5. PAGAMENTO -->
+            <div class="section-title"><i class="fas fa-wallet"></i> PAGAMENTO</div>
+            <select id="paymentMethod" class="payment-select" onchange="updateWhatsappLink()">
+                <option value="Pix">Pagamento via PIX</option>
+                <option value="Cartão de Crédito">Cartão de Crédito</option>
+                <option value="Cartão de Débito">Cartão de Débito</option>
+                <option value="Dinheiro">Dinheiro</option>
+            </select>
+
+            <!-- LOCALIZAÇÃO -->
+            <div class="location-card">
+                <strong style="color:white;">📍 ONDE ESTAMOS</strong><br>
+                Rua Giovanni Segantini, 257A - Conj. Res. José Bonifácio, SP
+                <a href="https://www.google.com/maps/search/?api=1&query=Rua+Giovanni+Segantini+257A+Jose+Bonifacio+Sao+Paulo" target="_blank" style="display:block; margin-top:10px; color:var(--gold); text-decoration: underline; font-weight: bold;">ABRIR NO GPS</a>
+            </div>
+
+            <!-- DIREITOS -->
+            <div class="copyright">
+                @LFB * 2022/2023 ImpérioCar-01<br>Todos os direitos reservados.
+            </div>
+        </form>
+    </div>
+
+    <!-- RODAPÉ FLUTUANTE -->
+    <div class="sticky-footer">
+        <div class="total-info">Valor Estimado: <span id="totalDisplay" class="total-price">R$ 0,00</span></div>
+        <a href="#" id="whatsappBtn" class="btn-whatsapp"><i class="fab fa-whatsapp"></i> Solicitar Agendamento</a>
+    </div>
+
+    <!-- ADMIN MODALS -->
+    <div id="loginModal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 style="color:var(--gold); margin-bottom:15px;"><i class="fas fa-lock"></i> ÁREA RESTRITA</h2>
+            <input type="password" id="adminPass" class="admin-input" placeholder="Senha">
+            <button onclick="checkAdmin()" class="admin-btn">ACESSAR</button>
+            <button onclick="closeModals()" class="admin-btn" style="background:#333; color:white;">CANCELAR</button>
+        </div>
+    </div>
+
+    <div id="adminPanel" class="modal-overlay">
+        <div class="modal-content" style="max-width:500px;">
+            <h2 style="color:var(--gold); margin-bottom:10px;"><i class="fas fa-cogs"></i> PAINEL ADMIN</h2>
+            
+            <div style="text-align:left; border-bottom:1px solid #444; padding-bottom:15px; margin-bottom:15px;">
+                <h3 style="color:white; font-size:1rem; margin-bottom:5px;">📸 Fotos (Veículos Prontos)</h3>
+                <!-- INPUT MÚLTIPLO HABILITADO -->
+                <label for="fileInput" class="admin-btn" style="background:#444; color:white; font-size:0.9rem;">
+                    <i class="fas fa-images"></i> SELECIONAR FOTOS
+                </label>
+                <input type="file" id="fileInput" accept="image/*" multiple style="display:none;" onchange="handleFileUpload(this)">
+                <div id="adminPhotoGrid" class="admin-photo-grid"></div>
+            </div>
+
+            <div style="text-align:left;">
+                <h3 style="color:white; font-size:1rem; margin-bottom:10px;">💰 Editar Preços (R$)</h3>
+                <div id="priceEditorContainer"></div>
+            </div>
+
+            <button onclick="saveAdminChanges()" class="admin-btn" style="background: var(--whatsapp); color:white; margin-top:20px;">SALVAR PREÇOS</button>
+            <button onclick="closeModals()" class="admin-btn admin-btn-danger" style="margin-top:20px;"><i class="fas fa-sign-out-alt"></i> SAIR DO PAINEL</button>
+        </div>
+    </div>
+
+    <script>
+        const defaultPrices = {
+            moto: { ducha: 20, simples: 30, cera: 40, higienizacao: 100 },
+            pequeno: { ducha: 30, simples: 45, cera: 60, higienizacao: 200 },
+            medio: { ducha: 35, simples: 50, cera: 70, higienizacao: 250 },
+            grande: { ducha: 50, simples: 70, cera: 90, higienizacao: 300 }
+        };
+
+        const defaultPhotos = [
+            "https://images.unsplash.com/photo-1601362840469-51e4d8d58785?w=600&q=80",
+            "https://images.unsplash.com/photo-1520340356584-7c903ccf70dc?w=600&q=80",
+            "https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=600&q=80"
+        ];
+
+        let prices = JSON.parse(localStorage.getItem('imperioPrices')) || defaultPrices;
+        let galleryPhotos = JSON.parse(localStorage.getItem('imperioPhotos')) || defaultPhotos;
+        let currentSlide = 0;
+        let slideInterval;
+        let formattedDateToday = "";
+        let formattedDateTomorrow = "";
+        let selectedTime = null;
+        let selectedDayType = 'hoje';
+
+        window.onload = function() {
+            initGallery();
+            initDates();
+            generateTimeSlots();
+            calculateTotal();
+            setupAdminTrigger();
+        };
+
+        // --- LÓGICA DE DATA E HORÁRIO ---
+        const daysOfWeek = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+
+        function initDates() {
+            const today = new Date();
+            const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+            
+            formattedDateToday = `${today.toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit'})} (${daysOfWeek[today.getDay()]})`;
+            formattedDateTomorrow = `${tomorrow.toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit'})} (${daysOfWeek[tomorrow.getDay()]})`;
+
+            document.getElementById('labelToday').innerText = formattedDateToday;
+            document.getElementById('labelTomorrow').innerText = formattedDateTomorrow;
+        }
+
+        function selectDate(day) {
+            selectedDayType = day;
+            document.getElementById('btnToday').classList.toggle('selected', day === 'hoje');
+            document.getElementById('btnTomorrow').classList.toggle('selected', day === 'amanha');
+            generateTimeSlots();
+            selectedTime = null;
+            updateWhatsappLink();
+        }
+
+        function generateTimeSlots() {
+            const container = document.getElementById('timeSlotsContainer');
+            container.innerHTML = '';
+            
+            const now = new Date();
+            const currentHour = now.getHours();
+            const currentMinute = now.getMinutes();
+            const isToday = selectedDayType === 'hoje';
+
+            let time = 8 * 60; // 08:00
+            
+            const encaixe = document.createElement('div');
+            encaixe.className = 'time-btn encaixe-btn';
+            encaixe.innerHTML = 'ENCAIXE (Sem Hora)';
+            encaixe.onclick = () => selectTime(encaixe, 'Encaixe');
+            container.appendChild(encaixe);
+
+            while(time < 18 * 60) {
+                const h = Math.floor(time/60);
+                const m = time % 60;
+                const tStr = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`;
+                
+                const btn = document.createElement('div');
+                btn.className = 'time-btn';
+                btn.innerText = tStr;
+
+                let isDisabled = false;
+                if (isToday) {
+                    if (h < currentHour || (h === currentHour && m < currentMinute)) {
+                        isDisabled = true;
+                    }
+                }
+
+                if (isDisabled) {
+                    btn.classList.add('disabled');
+                    btn.title = "Horário já passou";
+                } else {
+                    btn.onclick = () => selectTime(btn, tStr);
+                }
+
+                container.appendChild(btn);
+                time += 45;
+            }
+        }
+
+        function selectTime(el, val) {
+            document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('selected'));
+            el.classList.add('selected');
+            selectedTime = val;
+            updateWhatsappLink();
+        }
+
+        // --- GALERIA ---
+        function initGallery() {
+            const container = document.getElementById('galleryContainer');
+            const oldSlides = container.querySelectorAll('.gallery-slide');
+            oldSlides.forEach(el => el.remove());
+
+            if(galleryPhotos.length === 0) {
+                container.innerHTML = '<div style="color:white; display:flex; justify-content:center; align-items:center; height:100%;">Sem fotos na vitrine</div><div class="gallery-caption">Resultado Final ✨</div>';
+                return;
+            }
+            galleryPhotos.forEach((url, index) => {
+                const img = document.createElement('img');
+                img.src = url;
+                img.className = index === 0 ? 'gallery-slide active' : 'gallery-slide';
+                container.prepend(img);
+            });
+            if (slideInterval) clearInterval(slideInterval);
+            if (galleryPhotos.length > 1) { slideInterval = setInterval(nextSlide, 3000); }
+        }
+
+        function nextSlide() {
+            const slides = document.querySelectorAll('.gallery-slide');
+            if (slides.length === 0) return;
+            slides[currentSlide].classList.remove('active');
+            currentSlide = (currentSlide + 1) % slides.length;
+            slides[currentSlide].classList.add('active');
+        }
+
+        // --- CÁLCULO E WHATSAPP ---
+        function calculateTotal() {
+            const size = document.getElementById('carSize').value;
+            ['ducha','simples','cera','higienizacao'].forEach(svc => {
+                document.getElementById(`price-${svc}`).innerText = `R$ ${prices[size][svc]}`;
+            });
+            const svcRadio = document.querySelector('input[name="service"]:checked');
+            if(svcRadio) {
+                const val = prices[size][svcRadio.value];
+                document.getElementById('totalDisplay').innerText = `R$ ${val},00`;
+                updateWhatsappLink(val);
+            }
+        }
+
+        function updateWhatsappLink(val) {
+            if(!val) {
+                const size = document.getElementById('carSize').value;
+                const svc = document.querySelector('input[name="service"]:checked').value;
+                val = prices[size][svc];
+            }
+            const size = document.getElementById('carSize').value;
+            const svc = document.querySelector('input[name="service"]:checked').value;
+            const pay = document.getElementById('paymentMethod').value;
+            
+            const dateStr = selectedDayType === 'hoje' ? formattedDateToday : formattedDateTomorrow;
+            const timeStr = selectedTime || 'A Confirmar';
+            const priority = (selectedTime && selectedTime !== 'Encaixe') ? '✅ PREFERÊNCIA' : '⚠️ ENCAIXE';
+            
+            const msg = `👑 *IMPÉRIOCAR-01 - PRÉ-RESERVA*
+
+📅 *${dateStr}* às *${timeStr}*
+${priority}
+
+🚗 Veículo: ${size.toUpperCase()}
+🚿 Serviço: ${svc.toUpperCase()}
+💰 Valor: R$ ${val},00
+💳 Pagamento: ${pay}
+
+📍 _Aguardo confirmação do atendente!_`;
+            
+            document.getElementById('whatsappBtn').href = `https://wa.me/5511960671570?text=${encodeURIComponent(msg)}`;
+        }
+
+        // --- ADMIN: UPLOAD INTELIGENTE ---
+        let crownClicks = 0;
+        function setupAdminTrigger() {
+            document.getElementById('crownLogo').addEventListener('click', () => {
+                crownClicks++;
+                if(crownClicks >= 5) {
+                    document.getElementById('loginModal').style.display = 'flex';
+                    crownClicks = 0;
+                }
+                setTimeout(() => crownClicks = 0, 2000);
+            });
+        }
+        function checkAdmin() {
+            if(document.getElementById('adminPass').value === '#Ccjj9842$') {
+                closeModals(); openAdminPanel();
+            } else { alert('Senha Incorreta!'); }
+        }
+        function openAdminPanel() {
+            document.getElementById('adminPanel').style.display = 'flex';
+            renderAdminPhotos();
+            const container = document.getElementById('priceEditorContainer');
+            container.innerHTML = '';
+            for(let size in prices) {
+                const title = document.createElement('div');
+                title.style = "color:var(--gold); font-weight:bold; margin-top:10px; text-transform:uppercase;";
+                title.innerText = size;
+                container.appendChild(title);
+                for(let svc in prices[size]) {
+                    const row = document.createElement('div');
+                    row.className = 'price-edit-row';
+                    row.innerHTML = `<label>${svc}</label><input type="number" id="edit-${size}-${svc}" class="admin-input" value="${prices[size][svc]}">`;
+                    container.appendChild(row);
+                }
+            }
+        }
+        function renderAdminPhotos() {
+            const container = document.getElementById('adminPhotoGrid');
+            container.innerHTML = '';
+            galleryPhotos.forEach((url, index) => {
+                const div = document.createElement('div');
+                div.className = 'admin-photo-item';
+                div.innerHTML = `<img src="${url}"><button class="delete-btn" onclick="deletePhoto(${index})"><i class="fas fa-trash"></i></button>`;
+                container.appendChild(div);
+            });
+        }
+        function deletePhoto(index) {
+            if(confirm('Apagar foto?')) {
+                galleryPhotos.splice(index, 1);
+                localStorage.setItem('imperioPhotos', JSON.stringify(galleryPhotos));
+                initGallery(); renderAdminPhotos();
+            }
+        }
+
+        // --- NOVA FUNÇÃO DE UPLOAD COMPACTADO ---
+        async function handleFileUpload(input) {
+            if (input.files && input.files.length > 0) {
+                let processedCount = 0;
+                
+                for(let i = 0; i < input.files.length; i++) {
+                    const file = input.files[i];
+                    
+                    // Comprimir e Redimensionar Imagem
+                    try {
+                        const resizedBase64 = await compressImage(file);
+                        galleryPhotos.push(resizedBase64);
+                        processedCount++;
+                    } catch (err) {
+                        console.error("Erro ao processar imagem", err);
+                    }
+                }
+
+                // Salva no final
+                if(processedCount > 0) {
+                    try {
+                        localStorage.setItem('imperioPhotos', JSON.stringify(galleryPhotos));
+                        initGallery(); 
+                        renderAdminPhotos();
+                        alert(`${processedCount} fotos adicionadas com sucesso!`);
+                    } catch (e) {
+                        alert("Memória cheia! Tente apagar fotos antigas.");
+                    }
+                }
+                input.value = ''; // Limpa o input
+            }
+        }
+
+        function compressImage(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const maxWidth = 600; // Tamanho ideal para celular
+                        const scaleSize = maxWidth / img.width;
+                        const newWidth = maxWidth;
+                        const newHeight = img.height * scaleSize;
+
+                        canvas.width = newWidth;
+                        canvas.height = newHeight;
+
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, newWidth, newHeight);
+
+                        // Comprime para JPEG com 60% de qualidade
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+                        resolve(dataUrl);
+                    };
+                    img.onerror = (err) => reject(err);
+                };
+                reader.onerror = (err) => reject(err);
+            });
+        }
+
+        function saveAdminChanges() {
+            for(let size in prices) {
+                for(let svc in prices[size]) {
+                    const input = document.getElementById(`edit-${size}-${svc}`);
+                    if(input) prices[size][svc] = parseInt(input.value);
+                }
+            }
+            localStorage.setItem('imperioPrices', JSON.stringify(prices));
+            calculateTotal();
+            alert('Configurações Salvas!');
+        }
+        function closeModals() {
+            document.getElementById('loginModal').style.display = 'none';
+            document.getElementById('adminPanel').style.display = 'none';
+            document.getElementById('adminPass').value = '';
+        }
+    </script>
+</body>
+</html>
