@@ -56,7 +56,8 @@
         .price-tag { color: var(--gold); font-weight: bold; }
         
         .sticky-footer { position: fixed; bottom: 0; left: 0; width: 100%; background-color: rgba(0,0,0,0.95); padding: 15px; border-top: 1px solid #333; display: flex; flex-direction: column; align-items: center; z-index: 100; }
-        .btn-whatsapp { background-color: var(--whatsapp); color: white; text-decoration: none; padding: 16px; border-radius: 50px; font-weight: 800; width: 100%; text-align: center; display: block; }
+        .btn-whatsapp { background-color: var(--whatsapp); color: white; text-decoration: none; padding: 16px; border-radius: 50px; font-weight: 800; width: 100%; text-align: center; display: block; transition: opacity 0.3s; }
+        .btn-whatsapp:disabled { opacity: 0.5; cursor: not-allowed; }
         
         /* ADMIN */
         .modal-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:2000; align-items:center; justify-content:center; }
@@ -203,11 +204,12 @@
 
         // --- 3. INICIALIZAÇÃO ---
         window.onload = function() {
-            initGallery(); // Inicia a Galeria
+            initGallery();
             renderizarDatas();
             renderizarServicos();
             mudarData('hoje');
             initAdminTrigger();
+            calcular(); // Inicializa o cálculo e link do botão
         };
 
         // --- 4. GALERIA (VITRINE) ---
@@ -252,7 +254,9 @@
         // --- 5. LÓGICA DE DATAS E HORÁRIOS ---
         function renderizarDatas() {
             const hoje = new Date();
-            const amanha = new Date(hoje); amanha.setDate(hoje.getDate() + 1);
+            const amanha = new Date(hoje); 
+            amanha.setDate(hoje.getDate() + 1);
+            
             const formatar = (d) => `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}`;
             document.getElementById('labelToday').innerText = formatar(hoje);
             document.getElementById('labelTomorrow').innerText = formatar(amanha);
@@ -289,16 +293,27 @@
             grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px;">🔄 Buscando horários...</div>';
 
             const hoje = new Date();
-            const amanha = new Date(hoje); amanha.setDate(hoje.getDate() + 1);
+            const amanha = new Date(hoje); 
+            amanha.setDate(hoje.getDate() + 1);
+            
             const diasSemana = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
             const dataObj = diaSelecionado === 'hoje' ? hoje : amanha;
-            const dataStr = `${dataObj.getDate().toString().padStart(2,'0')}/${(dataObj.getMonth()+1).toString().padStart(2,'0')} (${diasSemana[dataObj.getDay()]})`;
+            const dataDia = dataObj.getDate().toString().padStart(2, '0');
+            const dataMes = (dataObj.getMonth() + 1).toString().padStart(2, '0');
+            const dataStr = `${dataDia}/${dataMes} (${diasSemana[dataObj.getDay()]})`;
 
             let ocupados = [];
             try {
-                const { data, error } = await supabase.from('agendamentos_imperio').select('horario').eq('data_escolhida', dataStr);
+                const { data, error } = await supabase
+                    .from('agendamentos_imperio')
+                    .select('horario')
+                    .eq('data_escolhida', dataStr);
+                    
+                if (error) throw error;
                 if (data) ocupados = data.map(i => i.horario);
-            } catch (e) { console.log(e); }
+            } catch (e) { 
+                console.log("Erro ao carregar horários:", e); 
+            }
 
             grid.innerHTML = '';
             grid.innerHTML += `<div class="time-btn" style="grid-column:1/-1; background:rgba(255,68,68,0.2); color:#ffaaaa; border:1px solid red;" onclick="selecionarHora(this, 'Encaixe')">ENCAIXE (Sem hora fixa)</div>`;
@@ -318,11 +333,15 @@
 
                 if (diaSelecionado === 'hoje') {
                     if (h < horaAtual || (h === horaAtual && m < minAtual)) {
-                        classeExtra = 'disabled'; bloqueado = true;
+                        classeExtra = 'disabled'; 
+                        bloqueado = true;
                     }
                 }
+                
                 if (ocupados.includes(horaFormatada)) {
-                    classeExtra = 'reserved'; bloqueado = true; textoExtra = '<br><span style="font-size:0.6rem">OCUPADO</span>';
+                    classeExtra = 'reserved'; 
+                    bloqueado = true; 
+                    textoExtra = '<br><span style="font-size:0.6rem">OCUPADO</span>';
                 }
 
                 const clickAction = bloqueado ? '' : `onclick="selecionarHora(this, '${horaFormatada}')"`;
@@ -333,7 +352,9 @@
 
         function selecionarHora(el, hora) {
             document.querySelectorAll('.time-btn').forEach(b => {
-                if(!b.classList.contains('disabled') && !b.classList.contains('reserved')) b.classList.remove('selected');
+                if(!b.classList.contains('disabled') && !b.classList.contains('reserved')) {
+                    b.classList.remove('selected');
+                }
             });
             el.classList.add('selected');
             horaSelecionada = hora;
@@ -345,53 +366,145 @@
             const servicoRadio = document.querySelector('input[name="servico"]:checked');
             const servicoId = servicoRadio ? servicoRadio.value : 'simples';
             
+            // Atualizar preços dos serviços
             servicosOpcoes.forEach(s => {
                 const valor = precos[tamanho][s.id];
-                document.getElementById(`tag-${s.id}`).innerText = `R$ ${valor}`;
+                const element = document.getElementById(`tag-${s.id}`);
+                if (element) {
+                    element.innerText = `R$ ${valor}`;
+                }
             });
 
+            // Calcular total
             const total = precos[tamanho][servicoId];
             document.getElementById('valorTotal').innerText = `R$ ${total},00`;
+            
+            // Atualizar link do WhatsApp
             atualizarLink();
         }
 
         function atualizarLink() {
+            // Obter valores dos campos
             const tamanho = document.getElementById('carSize').value;
             const servicoRadio = document.querySelector('input[name="servico"]:checked');
-            const servicoNome = servicoOpcoes.find(s => s.id === servicoRadio.value).nome;
+            
+            if (!servicoRadio) {
+                console.error("Nenhum serviço selecionado");
+                return;
+            }
+            
+            // Encontrar o nome do serviço
+            const servicoSelecionado = servicosOpcoes.find(s => s.id === servicoRadio.value);
+            if (!servicoSelecionado) {
+                console.error("Serviço não encontrado");
+                return;
+            }
+            
+            const servicoNome = servicoSelecionado.nome;
             const total = precos[tamanho][servicoRadio.value];
             const pag = document.getElementById('pagamento').value;
             
+            // Formatar data corretamente
             const hoje = new Date();
-            const amanha = new Date(hoje); amanha.setDate(hoje.getDate() + 1);
-            const diasSemana = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+            const amanha = new Date(hoje);
+            amanha.setDate(hoje.getDate() + 1);
+            
             const dataObj = diaSelecionado === 'hoje' ? hoje : amanha;
-            const dataStr = `${dataObj.getDate().toString().padStart(2,'0')}/${(dataObj.getMonth()+1).toString().padStart(2,'0')} (${diasSemana[dataObj.getDay()]})`;
+            const dataDia = dataObj.getDate().toString().padStart(2, '0');
+            const dataMes = (dataObj.getMonth() + 1).toString().padStart(2, '0');
+            const diasSemana = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+            const dataStr = `${dataDia}/${dataMes} (${diasSemana[dataObj.getDay()]})`;
+            
             const horaMsg = horaSelecionada || "A Confirmar";
             
-            const msg = `👑 *NOVO AGENDAMENTO*\n\n🗓 ${dataStr}\n⏰ *${horaMsg}*\n\n🚗 ${tamanho.toUpperCase()}\n🚿 ${servicoNome}\n💰 R$ ${total},00\n💳 ${pag}`;
-            const btn = document.getElementById('btnZap');
-            btn.href = `https://wa.me/5511960671570?text=${encodeURIComponent(msg)}`;
+            // Obter texto da opção selecionada do veículo
+            const carSizeSelect = document.getElementById('carSize');
+            const carSizeText = carSizeSelect.options[carSizeSelect.selectedIndex].text;
             
+            // Criar mensagem do WhatsApp
+            const msg = `👑 *NOVO AGENDAMENTO - ImpérioCar-01* 👑\n\n` +
+                        `🗓 *Data:* ${dataStr}\n` +
+                        `⏰ *Horário:* ${horaMsg}\n\n` +
+                        `🚗 *Veículo:* ${carSizeText}\n` +
+                        `🧼 *Serviço:* ${servicoNome}\n` +
+                        `💰 *Valor:* R$ ${total},00\n` +
+                        `💳 *Pagamento:* ${pag}\n\n` +
+                        `📍 *Local:* Rua Giovanni Segantini, 257A - José Bonifácio - SP`;
+            
+            const btn = document.getElementById('btnZap');
+            const whatsappNumber = '5511960671570';
+            btn.href = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(msg)}`;
+            
+            // Remover event listener anterior para evitar duplicação
+            btn.onclick = null;
+            
+            // Adicionar novo event listener
             btn.onclick = async (e) => {
                 e.preventDefault();
-                if (!horaSelecionada && horaSelecionada !== 'Encaixe') { alert("Por favor, escolha um horário!"); return; }
+                
+                // Validar seleção de horário
+                if (!horaSelecionada || horaSelecionada === '') {
+                    alert("⚠️ Por favor, escolha um horário antes de agendar!");
+                    return;
+                }
+                
                 const btnTxt = btn.innerText;
                 btn.innerText = "⏳ Verificando disponibilidade...";
+                btn.style.opacity = "0.7";
                 
+                // Verificar disponibilidade apenas se não for "Encaixe"
                 if (horaSelecionada !== 'Encaixe') {
-                    const { data } = await supabase.from('agendamentos_imperio').select('id').eq('data_escolhida', dataStr).eq('horario', horaSelecionada);
-                    if (data && data.length > 0) {
-                        alert("⚠️ OPA! Alguém reservou esse horário antes de você. O sistema vai atualizar.");
-                        carregarHorarios(); btn.innerText = btnTxt; return;
+                    try {
+                        const { data, error } = await supabase
+                            .from('agendamentos_imperio')
+                            .select('id')
+                            .eq('data_escolhida', dataStr)
+                            .eq('horario', horaSelecionada);
+                            
+                        if (error) throw error;
+                        
+                        if (data && data.length > 0) {
+                            alert("⚠️ Este horário já foi reservado! Por favor, escolha outro horário.");
+                            btn.innerText = btnTxt;
+                            btn.style.opacity = "1";
+                            await carregarHorarios(); // Atualizar grid de horários
+                            return;
+                        }
+                    } catch (error) {
+                        console.error("Erro ao verificar disponibilidade:", error);
+                        alert("Erro ao verificar disponibilidade. Tente novamente.");
+                        btn.innerText = btnTxt;
+                        btn.style.opacity = "1";
+                        return;
                     }
                 }
-                await supabase.from('agendamentos_imperio').insert({
-                    data_escolhida: dataStr, horario: horaSelecionada, tamanho_carro: tamanho,
-                    servico_nome: servicoNome, valor_cobrado: total, forma_pagamento: pag
-                });
-                window.location.href = btn.href;
-                btn.innerText = btnTxt;
+                
+                // Salvar no banco de dados
+                try {
+                    const { error } = await supabase
+                        .from('agendamentos_imperio')
+                        .insert({
+                            data_escolhida: dataStr,
+                            horario: horaSelecionada,
+                            tamanho_carro: tamanho,
+                            servico_nome: servicoNome,
+                            valor_cobrado: total,
+                            forma_pagamento: pag,
+                            data_criacao: new Date().toISOString()
+                        });
+                        
+                    if (error) throw error;
+                    
+                    // Redirecionar para WhatsApp
+                    window.open(btn.href, '_blank');
+                    
+                } catch (error) {
+                    console.error("Erro ao salvar agendamento:", error);
+                    alert("Erro ao salvar agendamento. Tente novamente.");
+                } finally {
+                    btn.innerText = btnTxt;
+                    btn.style.opacity = "1";
+                }
             };
         }
 
@@ -400,18 +513,25 @@
         function initAdminTrigger() {
             document.getElementById('crownLogo').onclick = () => {
                 clicks++;
-                if(clicks===5) { document.getElementById('modalLogin').style.display='flex'; clicks=0; }
+                if(clicks===5) { 
+                    document.getElementById('modalLogin').style.display='flex'; 
+                    clicks=0; 
+                }
                 setTimeout(()=>clicks=0, 2000);
             };
         }
+        
         function logarAdmin() {
             if(document.getElementById('senhaAdmin').value === '#Ccjj9842$') {
                 document.getElementById('modalLogin').style.display='none';
                 document.getElementById('painelAdmin').style.display='flex';
                 montarEditorPrecos();
                 renderAdminPhotos();
-            } else alert('Senha errada');
+            } else {
+                alert('Senha incorreta!');
+            }
         }
+        
         function montarEditorPrecos() {
             const div = document.getElementById('editorPrecos');
             div.innerHTML = '';
@@ -425,15 +545,19 @@
                 }
             }
         }
+        
         function salvarPrecos() {
             for(let tam in precos) {
-                for(let s in precos[tam]) { precos[tam][s] = Number(document.getElementById(`p-${tam}-${s}`).value); }
+                for(let s in precos[tam]) { 
+                    precos[tam][s] = Number(document.getElementById(`p-${tam}-${s}`).value); 
+                }
             }
             localStorage.setItem('precosImperio', JSON.stringify(precos));
             localStorage.setItem('imperioPhotos', JSON.stringify(galleryPhotos));
-            alert('Tudo salvo!');
+            alert('Preços e fotos salvos com sucesso!');
             document.getElementById('painelAdmin').style.display='none';
-            calcular(); initGallery();
+            calcular(); 
+            initGallery();
         }
 
         // --- 7. UPLOAD DE FOTOS (BASE64 LOCAL) ---
@@ -447,12 +571,14 @@
                 container.appendChild(div);
             });
         }
+        
         function deletePhoto(index) {
-            if(confirm('Apagar foto?')) {
+            if(confirm('Tem certeza que deseja apagar esta foto?')) {
                 galleryPhotos.splice(index, 1);
                 renderAdminPhotos();
             }
         }
+        
         async function handleFileUpload(input) {
             if (input.files && input.files.length > 0) {
                 let processedCount = 0;
@@ -462,27 +588,38 @@
                         const resizedBase64 = await compressImage(file);
                         galleryPhotos.push(resizedBase64);
                         processedCount++;
-                    } catch (err) { console.error("Erro", err); }
+                    } catch (err) { 
+                        console.error("Erro ao processar imagem", err); 
+                    }
                 }
                 if(processedCount > 0) {
                     renderAdminPhotos();
-                    alert(`${processedCount} fotos prontas! Clique em SALVAR ALTERAÇÕES para confirmar.`);
+                    alert(`${processedCount} fotos adicionadas! Clique em SALVAR ALTERAÇÕES para confirmar.`);
                 }
                 input.value = '';
             }
         }
+        
         function compressImage(file) {
             return new Promise((resolve, reject) => {
-                const reader = new FileReader(); reader.readAsDataURL(file);
+                const reader = new FileReader(); 
+                reader.readAsDataURL(file);
                 reader.onload = (event) => {
-                    const img = new Image(); img.src = event.target.result;
+                    const img = new Image(); 
+                    img.src = event.target.result;
                     img.onload = () => {
-                        const canvas = document.createElement('canvas'); const maxWidth = 600;
-                        const scaleSize = maxWidth / img.width; canvas.width = maxWidth; canvas.height = img.height * scaleSize;
-                        const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        const canvas = document.createElement('canvas'); 
+                        const maxWidth = 600;
+                        const scaleSize = maxWidth / img.width; 
+                        canvas.width = maxWidth; 
+                        canvas.height = img.height * scaleSize;
+                        const ctx = canvas.getContext('2d'); 
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                         resolve(canvas.toDataURL('image/jpeg', 0.6));
-                    }; img.onerror = (err) => reject(err);
-                }; reader.onerror = (err) => reject(err);
+                    }; 
+                    img.onerror = (err) => reject(err);
+                }; 
+                reader.onerror = (err) => reject(err);
             });
         }
     </script>
