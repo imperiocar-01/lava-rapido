@@ -650,5 +650,77 @@ ${priority}
             document.getElementById('adminPass').value = '';
         }
     </script>
+
+    <!-- ============================================== -->
+    <!-- CONEXÃO BANCO DE DADOS (SUPABASE - IMPERIOCAR) -->
+    <!-- ============================================== -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script>
+      // 1. DADOS DE CONEXÃO
+      const supabaseUrl = 'https://jmivkvtebtjudqhvgc.supabase.co';
+      const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptaXZrdmV0ZWJ0anVkcWh2dmdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ2MjIzMTYsImV4cCI6MjA4MDE5ODMxNn0.WtPrTn0Kvx6o_h_ZfNoAcQGjNDErr0NqT0wt60YLlo0';
+      
+      const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+      // 2. LÓGICA DE AGENDAMENTO
+      const btnZap = document.getElementById('whatsappBtn');
+      
+      // Remove o link original para controlarmos o clique
+      btnZap.removeAttribute('href');
+      btnZap.style.cursor = 'pointer';
+
+      btnZap.addEventListener('click', async function(e) {
+          e.preventDefault(); 
+          
+          // Muda o texto do botão
+          const textoOriginal = btnZap.innerHTML;
+          btnZap.innerHTML = '⏳ Agendando...';
+
+          // Coleta os dados da tela
+          const tamanho = document.getElementById('carSize').value;
+          
+          let servico = 'Não definido';
+          const radioServico = document.querySelector('input[name="service"]:checked');
+          if(radioServico) servico = radioServico.value;
+
+          const pagamento = document.getElementById('paymentMethod').value;
+          
+          const dataFinal = (typeof selectedDayType !== 'undefined' && selectedDayType === 'hoje') 
+                            ? formattedDateToday : formattedDateTomorrow;
+          const horarioFinal = (typeof selectedTime !== 'undefined' && selectedTime) 
+                               ? selectedTime : 'Encaixe';
+
+          const valorTexto = document.getElementById('totalDisplay').innerText;
+          const valorNumero = parseFloat(valorTexto.replace('R$', '').replace(',', '.').trim());
+
+          // SALVA NO SUPABASE
+          const { error } = await supabase
+            .from('agendamentos_imperio')
+            .insert({
+                data_escolhida: dataFinal,
+                horario: horarioFinal,
+                tamanho_carro: tamanho,
+                servico_nome: servico,
+                valor_cobrado: valorNumero,
+                forma_pagamento: pagamento
+            });
+
+          if (error) {
+              console.log('Erro ao salvar:', error);
+              // Não vamos mostrar erro pro cliente para não travar a venda,
+              // apenas seguimos para o WhatsApp.
+          }
+
+          // REDIRECIONA PARA O WHATSAPP
+          // Garante que o link está atualizado com os dados finais
+          updateWhatsappLink();
+          const linkFinal = document.getElementById('whatsappBtn').href;
+          
+          window.location.href = linkFinal;
+          
+          // Restaura o botão
+          btnZap.innerHTML = textoOriginal;
+      });
+    </script>
 </body>
 </html>
