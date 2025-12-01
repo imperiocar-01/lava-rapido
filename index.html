@@ -672,11 +672,10 @@ ${priority}
       btnZap.addEventListener('click', async function(e) {
           e.preventDefault(); 
           
-          // Muda o texto do botão
           const textoOriginal = btnZap.innerHTML;
-          btnZap.innerHTML = '⏳ Agendando...';
+          btnZap.innerHTML = '⏳ Verificando...';
 
-          // Coleta os dados da tela
+          // --- COLETAR DADOS DA TELA ---
           const tamanho = document.getElementById('carSize').value;
           
           let servico = 'Não definido';
@@ -693,7 +692,28 @@ ${priority}
           const valorTexto = document.getElementById('totalDisplay').innerText;
           const valorNumero = parseFloat(valorTexto.replace('R$', '').replace(',', '.').trim());
 
-          // SALVA NO SUPABASE
+          // ==========================================================
+          // 1. TRAVA DE SEGURANÇA (VERIFICA SE O HORÁRIO JÁ ESTÁ CHEIO)
+          // ==========================================================
+          if(horarioFinal !== 'Encaixe') { // "Encaixe" não precisa verificar, aceita vários
+              
+              const { data: agendamentosExistentes, error: erroCheck } = await supabase
+                  .from('agendamentos_imperio')
+                  .select('id')
+                  .eq('data_escolhida', dataFinal)
+                  .eq('horario', horarioFinal);
+
+              if (agendamentosExistentes && agendamentosExistentes.length > 0) {
+                  // JÁ TEM GENTE! PARA TUDO!
+                  btnZap.innerHTML = textoOriginal;
+                  alert('⚠️ OPA! Esse horário (' + horarioFinal + ') já foi reservado por outra pessoa agora mesmo.\n\nPor favor, escolha outro horário na lista.');
+                  return; // Sai da função e não faz mais nada
+              }
+          }
+
+          // ==========================================================
+          // 2. SALVA NO SUPABASE (SÓ SE ESTIVER LIVRE)
+          // ==========================================================
           const { error } = await supabase
             .from('agendamentos_imperio')
             .insert({
@@ -707,18 +727,15 @@ ${priority}
 
           if (error) {
               console.log('Erro ao salvar:', error);
-              // Não vamos mostrar erro pro cliente para não travar a venda,
-              // apenas seguimos para o WhatsApp.
           }
 
-          // REDIRECIONA PARA O WHATSAPP
-          // Garante que o link está atualizado com os dados finais
+          // ==========================================================
+          // 3. ABRE O WHATSAPP
+          // ==========================================================
           updateWhatsappLink();
           const linkFinal = document.getElementById('whatsappBtn').href;
           
           window.location.href = linkFinal;
-          
-          // Restaura o botão
           btnZap.innerHTML = textoOriginal;
       });
     </script>
