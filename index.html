@@ -7,6 +7,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800;900&display=swap" rel="stylesheet">
     
+    <!-- SUPABASE SDK (Carregando no início para as cores funcionarem rápido) -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
     <style>
         :root {
             --gold: #FFD700;
@@ -16,6 +19,8 @@
             --gray-light: #2a2a2a;
             --whatsapp: #25D366;
             --danger: #ff4444;
+            --reserved-bg: #380000; /* Fundo vermelho escuro para ocupados */
+            --reserved-text: #8a3b3b; /* Texto apagado para ocupados */
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Montserrat', sans-serif; -webkit-tap-highlight-color: transparent; }
@@ -106,8 +111,8 @@
         }
         select:focus { border-color: var(--gold); }
 
-        /* GRID HORÁRIOS */
-        .time-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+        /* GRID HORÁRIOS - AGORA COM CORES */
+        .time-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; position: relative; min-height: 100px; }
         @media (max-width: 380px) { .time-grid { grid-template-columns: repeat(3, 1fr); } }
 
         .time-btn {
@@ -115,15 +120,44 @@
             padding: 12px 5px; border-radius: 6px; font-size: 0.85rem; cursor: pointer;
             text-align: center; transition: 0.2s;
         }
+        
+        /* COR 1: SELECIONADO (DOURADO) */
         .time-btn.selected {
             background-color: var(--gold); color: var(--black); border-color: var(--gold);
             font-weight: 900; box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
         }
+        
+        /* COR 2: BLOQUEADO POR HORÁRIO PASSADO (CINZA ESCURO RISCADO) */
         .time-btn.disabled {
             background-color: #111; color: #444; border-color: #222;
             cursor: not-allowed; text-decoration: line-through;
         }
+
+        /* COR 3: RESERVADO POR OUTRA PESSOA (VERMELHO) */
+        .time-btn.reserved {
+            background-color: var(--reserved-bg); 
+            color: var(--reserved-text); 
+            border-color: #550000;
+            cursor: not-allowed;
+            pointer-events: none; /* Não deixa clicar */
+            position: relative;
+        }
+        .time-btn.reserved::after {
+            content: 'OCUPADO';
+            display: block;
+            font-size: 0.6rem;
+            color: var(--danger);
+            margin-top: 2px;
+            font-weight: bold;
+        }
         
+        /* LOADING */
+        .loading-overlay {
+            position: absolute; top:0; left:0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center;
+            z-index: 10; border-radius: 8px;
+        }
+
         .encaixe-btn {
             grid-column: 1 / -1; background-color: rgba(255, 68, 68, 0.1);
             border-color: var(--danger); color: #ffaaaa;
@@ -243,8 +277,11 @@
 
             <!-- 3. HORÁRIOS -->
             <div class="section-title"><i class="far fa-clock"></i> ESCOLHA O HORÁRIO</div>
-            <div class="time-grid" id="timeSlotsContainer"></div>
-            <p style="font-size: 0.75rem; color: #666; margin-top: 5px; text-align: center;">*Horários passados são bloqueados automaticamente.</p>
+            <!-- Container dos horários com Loading -->
+            <div style="position: relative;">
+                <div class="time-grid" id="timeSlotsContainer"></div>
+            </div>
+            <p style="font-size: 0.75rem; color: #666; margin-top: 5px; text-align: center;">*Vermelho = Ocupado | Dourado = Seu</p>
 
             <!-- 4. SERVIÇOS -->
             <div class="section-title"><i class="fas fa-spray-can"></i> SERVIÇO DESEJADO</div>
@@ -306,7 +343,7 @@
         <a href="#" id="whatsappBtn" class="btn-whatsapp"><i class="fab fa-whatsapp"></i> Solicitar Agendamento</a>
     </div>
 
-    <!-- ADMIN MODALS -->
+    <!-- MODALS E ADMIN (Mantidos iguais) -->
     <div id="loginModal" class="modal-overlay">
         <div class="modal-content">
             <h2 style="color:var(--gold); margin-bottom:15px;"><i class="fas fa-lock"></i> ÁREA RESTRITA</h2>
@@ -315,143 +352,183 @@
             <button onclick="closeModals()" class="admin-btn" style="background:#333; color:white;">CANCELAR</button>
         </div>
     </div>
-
     <div id="adminPanel" class="modal-overlay">
         <div class="modal-content" style="max-width:500px;">
             <h2 style="color:var(--gold); margin-bottom:10px;"><i class="fas fa-cogs"></i> PAINEL ADMIN</h2>
-            
             <div style="text-align:left; border-bottom:1px solid #444; padding-bottom:15px; margin-bottom:15px;">
                 <h3 style="color:white; font-size:1rem; margin-bottom:5px;">📸 Fotos (Veículos Prontos)</h3>
-                <!-- INPUT MÚLTIPLO HABILITADO -->
                 <label for="fileInput" class="admin-btn" style="background:#444; color:white; font-size:0.9rem;">
                     <i class="fas fa-images"></i> SELECIONAR FOTOS
                 </label>
                 <input type="file" id="fileInput" accept="image/*" multiple style="display:none;" onchange="handleFileUpload(this)">
                 <div id="adminPhotoGrid" class="admin-photo-grid"></div>
             </div>
-
             <div style="text-align:left;">
                 <h3 style="color:white; font-size:1rem; margin-bottom:10px;">💰 Editar Preços (R$)</h3>
                 <div id="priceEditorContainer"></div>
             </div>
-
             <button onclick="saveAdminChanges()" class="admin-btn" style="background: var(--whatsapp); color:white; margin-top:20px;">SALVAR PREÇOS</button>
             <button onclick="closeModals()" class="admin-btn admin-btn-danger" style="margin-top:20px;"><i class="fas fa-sign-out-alt"></i> SAIR DO PAINEL</button>
         </div>
     </div>
 
+    <!-- ============================================== -->
+    <!-- LÓGICA DO SUPABASE E SISTEMA DE CORES -->
+    <!-- ============================================== -->
     <script>
-        const defaultPrices = {
+      // 1. DADOS DE CONEXÃO
+      const supabaseUrl = 'https://jmivkvtebtjudqhvgc.supabase.co';
+      const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptaXZrdmV0ZWJ0anVkcWh2dmdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ2MjIzMTYsImV4cCI6MjA4MDE5ODMxNn0.WtPrTn0Kvx6o_h_ZfNoAcQGjNDErr0NqT0wt60YLlo0';
+      const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+      // Variáveis Globais
+      const defaultPrices = {
             moto: { ducha: 20, simples: 30, cera: 40, higienizacao: 100 },
             pequeno: { ducha: 30, simples: 45, cera: 60, higienizacao: 200 },
             medio: { ducha: 35, simples: 50, cera: 70, higienizacao: 250 },
             grande: { ducha: 50, simples: 70, cera: 90, higienizacao: 300 }
-        };
-
-        const defaultPhotos = [
+      };
+      const defaultPhotos = [
             "https://images.unsplash.com/photo-1601362840469-51e4d8d58785?w=600&q=80",
-            "https://images.unsplash.com/photo-1520340356584-7c903ccf70dc?w=600&q=80",
-            "https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=600&q=80"
-        ];
+            "https://images.unsplash.com/photo-1520340356584-7c903ccf70dc?w=600&q=80"
+      ];
+      let prices = JSON.parse(localStorage.getItem('imperioPrices')) || defaultPrices;
+      let galleryPhotos = JSON.parse(localStorage.getItem('imperioPhotos')) || defaultPhotos;
+      let currentSlide = 0;
+      let slideInterval;
+      
+      let formattedDateToday = "";
+      let formattedDateTomorrow = "";
+      let selectedTime = null;
+      let selectedDayType = 'hoje';
+      const daysOfWeek = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
 
-        let prices = JSON.parse(localStorage.getItem('imperioPrices')) || defaultPrices;
-        let galleryPhotos = JSON.parse(localStorage.getItem('imperioPhotos')) || defaultPhotos;
-        let currentSlide = 0;
-        let slideInterval;
-        let formattedDateToday = "";
-        let formattedDateTomorrow = "";
-        let selectedTime = null;
-        let selectedDayType = 'hoje';
+      // --- INICIALIZAÇÃO ---
+      window.onload = function() {
+          initGallery();
+          initDates();
+          // generateTimeSlots() é chamado dentro de initDates agora
+          calculateTotal();
+          setupAdminTrigger();
+      };
 
-        window.onload = function() {
-            initGallery();
-            initDates();
-            generateTimeSlots();
-            calculateTotal();
-            setupAdminTrigger();
-        };
+      // --- DATAS E CARREGAMENTO DE HORÁRIOS ---
+      function initDates() {
+          const today = new Date();
+          const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+          
+          formattedDateToday = `${today.toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit'})} (${daysOfWeek[today.getDay()]})`;
+          formattedDateTomorrow = `${tomorrow.toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit'})} (${daysOfWeek[tomorrow.getDay()]})`;
 
-        // --- LÓGICA DE DATA E HORÁRIO ---
-        const daysOfWeek = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+          document.getElementById('labelToday').innerText = formattedDateToday;
+          document.getElementById('labelTomorrow').innerText = formattedDateTomorrow;
+          
+          // Começa selecionando hoje
+          selectDate('hoje');
+      }
 
-        function initDates() {
-            const today = new Date();
-            const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
-            
-            formattedDateToday = `${today.toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit'})} (${daysOfWeek[today.getDay()]})`;
-            formattedDateTomorrow = `${tomorrow.toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit'})} (${daysOfWeek[tomorrow.getDay()]})`;
+      async function selectDate(day) {
+          selectedDayType = day;
+          document.getElementById('btnToday').classList.toggle('selected', day === 'hoje');
+          document.getElementById('btnTomorrow').classList.toggle('selected', day === 'amanha');
+          
+          selectedTime = null; // Reseta horário
+          updateWhatsappLink();
+          
+          // Chama o banco de dados para ver o que está ocupado
+          await loadTimeSlotsWithAvailability();
+      }
 
-            document.getElementById('labelToday').innerText = formattedDateToday;
-            document.getElementById('labelTomorrow').innerText = formattedDateTomorrow;
-        }
+      // FUNÇÃO MÁGICA: PINTA OS BOTÕES
+      async function loadTimeSlotsWithAvailability() {
+          const container = document.getElementById('timeSlotsContainer');
+          // Mostra Loading
+          container.innerHTML = '<div class="loading-overlay"><i class="fas fa-spinner fa-spin fa-2x" style="color:var(--gold);"></i></div>';
+          
+          // 1. Descobre qual data estamos olhando
+          const dateStr = selectedDayType === 'hoje' ? formattedDateToday : formattedDateTomorrow;
 
-        function selectDate(day) {
-            selectedDayType = day;
-            document.getElementById('btnToday').classList.toggle('selected', day === 'hoje');
-            document.getElementById('btnTomorrow').classList.toggle('selected', day === 'amanha');
-            generateTimeSlots();
-            selectedTime = null;
-            updateWhatsappLink();
-        }
+          // 2. Busca no Supabase (Quais horários já tem dono?)
+          let occupiedTimes = [];
+          const { data, error } = await supabase
+              .from('agendamentos_imperio')
+              .select('horario')
+              .eq('data_escolhida', dateStr);
+          
+          if(data) {
+              occupiedTimes = data.map(item => item.horario);
+          }
 
-        function generateTimeSlots() {
-            const container = document.getElementById('timeSlotsContainer');
-            container.innerHTML = '';
-            
-            const now = new Date();
-            const currentHour = now.getHours();
-            const currentMinute = now.getMinutes();
-            const isToday = selectedDayType === 'hoje';
+          // 3. Desenha os botões
+          container.innerHTML = ''; // Limpa loading
+          
+          const now = new Date();
+          const currentHour = now.getHours();
+          const currentMinute = now.getMinutes();
+          const isToday = selectedDayType === 'hoje';
 
-            let time = 8 * 60; // 08:00
-            
-            const encaixe = document.createElement('div');
-            encaixe.className = 'time-btn encaixe-btn';
-            encaixe.innerHTML = 'ENCAIXE (Sem Hora)';
-            encaixe.onclick = () => selectTime(encaixe, 'Encaixe');
-            container.appendChild(encaixe);
+          let time = 8 * 60; // Começa as 08:00
+          
+          // Botão ENCAIXE
+          const encaixe = document.createElement('div');
+          encaixe.className = 'time-btn encaixe-btn';
+          encaixe.innerHTML = 'ENCAIXE (Sem Hora)';
+          encaixe.onclick = () => selectTime(encaixe, 'Encaixe');
+          container.appendChild(encaixe);
 
-            while(time < 18 * 60) {
-                const h = Math.floor(time/60);
-                const m = time % 60;
-                const tStr = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`;
-                
-                const btn = document.createElement('div');
-                btn.className = 'time-btn';
-                btn.innerText = tStr;
+          while(time < 18 * 60) {
+              const h = Math.floor(time/60);
+              const m = time % 60;
+              const tStr = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`;
+              
+              const btn = document.createElement('div');
+              btn.className = 'time-btn';
+              btn.innerText = tStr;
 
-                let isDisabled = false;
-                if (isToday) {
-                    if (h < currentHour || (h === currentHour && m < currentMinute)) {
-                        isDisabled = true;
-                    }
-                }
+              // VERIFICAÇÕES DE COR
+              
+              // A. Já passou do horário? (Cinza Riscado)
+              let isPast = false;
+              if (isToday) {
+                  if (h < currentHour || (h === currentHour && m < currentMinute)) {
+                      isPast = true;
+                  }
+              }
 
-                if (isDisabled) {
-                    btn.classList.add('disabled');
-                    btn.title = "Horário já passou";
-                } else {
-                    btn.onclick = () => selectTime(btn, tStr);
-                }
+              // B. Já está ocupado no banco? (Vermelho)
+              const isTaken = occupiedTimes.includes(tStr);
 
-                container.appendChild(btn);
-                time += 45;
-            }
-        }
+              if (isPast) {
+                  btn.classList.add('disabled');
+                  btn.title = "Horário já passou";
+              } else if (isTaken) {
+                  // COR VERMELHA AQUI
+                  btn.classList.add('reserved');
+                  btn.title = "Reservado";
+              } else {
+                  // COR CINZA (Livre)
+                  btn.onclick = () => selectTime(btn, tStr);
+              }
 
-        function selectTime(el, val) {
-            document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('selected'));
-            el.classList.add('selected');
-            selectedTime = val;
-            updateWhatsappLink();
-        }
+              container.appendChild(btn);
+              time += 45; // Intervalo de 45 min
+          }
+      }
 
-        // --- GALERIA ---
-        function initGallery() {
+      function selectTime(el, val) {
+          // Remove dourado de todos
+          document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('selected'));
+          // Coloca dourado no clicado
+          el.classList.add('selected');
+          selectedTime = val;
+          updateWhatsappLink();
+      }
+
+      // --- OUTRAS FUNÇÕES (Galeria, Preços, etc) ---
+      function initGallery() {
             const container = document.getElementById('galleryContainer');
             const oldSlides = container.querySelectorAll('.gallery-slide');
             oldSlides.forEach(el => el.remove());
-
             if(galleryPhotos.length === 0) {
                 container.innerHTML = '<div style="color:white; display:flex; justify-content:center; align-items:center; height:100%;">Sem fotos na vitrine</div><div class="gallery-caption">Resultado Final ✨</div>';
                 return;
@@ -464,18 +541,15 @@
             });
             if (slideInterval) clearInterval(slideInterval);
             if (galleryPhotos.length > 1) { slideInterval = setInterval(nextSlide, 3000); }
-        }
-
-        function nextSlide() {
+      }
+      function nextSlide() {
             const slides = document.querySelectorAll('.gallery-slide');
             if (slides.length === 0) return;
             slides[currentSlide].classList.remove('active');
             currentSlide = (currentSlide + 1) % slides.length;
             slides[currentSlide].classList.add('active');
-        }
-
-        // --- CÁLCULO E WHATSAPP ---
-        function calculateTotal() {
+      }
+      function calculateTotal() {
             const size = document.getElementById('carSize').value;
             ['ducha','simples','cera','higienizacao'].forEach(svc => {
                 document.getElementById(`price-${svc}`).innerText = `R$ ${prices[size][svc]}`;
@@ -486,9 +560,8 @@
                 document.getElementById('totalDisplay').innerText = `R$ ${val},00`;
                 updateWhatsappLink(val);
             }
-        }
-
-        function updateWhatsappLink(val) {
+      }
+      function updateWhatsappLink(val) {
             if(!val) {
                 const size = document.getElementById('carSize').value;
                 const svc = document.querySelector('input[name="service"]:checked').value;
@@ -497,245 +570,129 @@
             const size = document.getElementById('carSize').value;
             const svc = document.querySelector('input[name="service"]:checked').value;
             const pay = document.getElementById('paymentMethod').value;
-            
             const dateStr = selectedDayType === 'hoje' ? formattedDateToday : formattedDateTomorrow;
             const timeStr = selectedTime || 'A Confirmar';
             const priority = (selectedTime && selectedTime !== 'Encaixe') ? '✅ PREFERÊNCIA' : '⚠️ ENCAIXE';
-            
-            const msg = `👑 *IMPÉRIOCAR-01 - PRÉ-RESERVA*
-
-📅 *${dateStr}* às *${timeStr}*
-${priority}
-
-🚗 Veículo: ${size.toUpperCase()}
-🚿 Serviço: ${svc.toUpperCase()}
-💰 Valor: R$ ${val},00
-💳 Pagamento: ${pay}
-
-📍 _Aguardo confirmação do atendente!_`;
-            
+            const msg = `👑 *IMPÉRIOCAR-01 - PRÉ-RESERVA*\n\n📅 *${dateStr}* às *${timeStr}*\n${priority}\n\n🚗 Veículo: ${size.toUpperCase()}\n🚿 Serviço: ${svc.toUpperCase()}\n💰 Valor: R$ ${val},00\n💳 Pagamento: ${pay}\n\n📍 _Aguardo confirmação do atendente!_`;
             document.getElementById('whatsappBtn').href = `https://wa.me/5511960671570?text=${encodeURIComponent(msg)}`;
-        }
+      }
 
-        // --- ADMIN: UPLOAD INTELIGENTE ---
-        let crownClicks = 0;
-        function setupAdminTrigger() {
+      // --- ADMIN ---
+      let crownClicks = 0;
+      function setupAdminTrigger() {
             document.getElementById('crownLogo').addEventListener('click', () => {
                 crownClicks++;
-                if(crownClicks >= 5) {
-                    document.getElementById('loginModal').style.display = 'flex';
-                    crownClicks = 0;
-                }
+                if(crownClicks >= 5) { document.getElementById('loginModal').style.display = 'flex'; crownClicks = 0; }
                 setTimeout(() => crownClicks = 0, 2000);
             });
-        }
-        function checkAdmin() {
-            if(document.getElementById('adminPass').value === '#Ccjj9842$') {
-                closeModals(); openAdminPanel();
-            } else { alert('Senha Incorreta!'); }
-        }
-        function openAdminPanel() {
-            document.getElementById('adminPanel').style.display = 'flex';
-            renderAdminPhotos();
-            const container = document.getElementById('priceEditorContainer');
-            container.innerHTML = '';
+      }
+      function checkAdmin() {
+            if(document.getElementById('adminPass').value === '#Ccjj9842$') { closeModals(); openAdminPanel(); } else { alert('Senha Incorreta!'); }
+      }
+      function openAdminPanel() {
+            document.getElementById('adminPanel').style.display = 'flex'; renderAdminPhotos();
+            const container = document.getElementById('priceEditorContainer'); container.innerHTML = '';
             for(let size in prices) {
                 const title = document.createElement('div');
                 title.style = "color:var(--gold); font-weight:bold; margin-top:10px; text-transform:uppercase;";
                 title.innerText = size;
                 container.appendChild(title);
                 for(let svc in prices[size]) {
-                    const row = document.createElement('div');
-                    row.className = 'price-edit-row';
+                    const row = document.createElement('div'); row.className = 'price-edit-row';
                     row.innerHTML = `<label>${svc}</label><input type="number" id="edit-${size}-${svc}" class="admin-input" value="${prices[size][svc]}">`;
                     container.appendChild(row);
                 }
             }
-        }
-        function renderAdminPhotos() {
-            const container = document.getElementById('adminPhotoGrid');
-            container.innerHTML = '';
+      }
+      function renderAdminPhotos() {
+            const container = document.getElementById('adminPhotoGrid'); container.innerHTML = '';
             galleryPhotos.forEach((url, index) => {
-                const div = document.createElement('div');
-                div.className = 'admin-photo-item';
+                const div = document.createElement('div'); div.className = 'admin-photo-item';
                 div.innerHTML = `<img src="${url}"><button class="delete-btn" onclick="deletePhoto(${index})"><i class="fas fa-trash"></i></button>`;
                 container.appendChild(div);
             });
-        }
-        function deletePhoto(index) {
-            if(confirm('Apagar foto?')) {
-                galleryPhotos.splice(index, 1);
-                localStorage.setItem('imperioPhotos', JSON.stringify(galleryPhotos));
-                initGallery(); renderAdminPhotos();
-            }
-        }
-
-        // --- NOVA FUNÇÃO DE UPLOAD COMPACTADO ---
-        async function handleFileUpload(input) {
+      }
+      function deletePhoto(index) {
+            if(confirm('Apagar foto?')) { galleryPhotos.splice(index, 1); localStorage.setItem('imperioPhotos', JSON.stringify(galleryPhotos)); initGallery(); renderAdminPhotos(); }
+      }
+      async function handleFileUpload(input) {
             if (input.files && input.files.length > 0) {
                 let processedCount = 0;
-                
                 for(let i = 0; i < input.files.length; i++) {
                     const file = input.files[i];
-                    
-                    // Comprimir e Redimensionar Imagem
                     try {
                         const resizedBase64 = await compressImage(file);
-                        galleryPhotos.push(resizedBase64);
-                        processedCount++;
-                    } catch (err) {
-                        console.error("Erro ao processar imagem", err);
-                    }
+                        galleryPhotos.push(resizedBase64); processedCount++;
+                    } catch (err) { console.error("Erro", err); }
                 }
-
-                // Salva no final
-                if(processedCount > 0) {
-                    try {
-                        localStorage.setItem('imperioPhotos', JSON.stringify(galleryPhotos));
-                        initGallery(); 
-                        renderAdminPhotos();
-                        alert(`${processedCount} fotos adicionadas com sucesso!`);
-                    } catch (e) {
-                        alert("Memória cheia! Tente apagar fotos antigas.");
-                    }
-                }
-                input.value = ''; // Limpa o input
+                if(processedCount > 0) { localStorage.setItem('imperioPhotos', JSON.stringify(galleryPhotos)); initGallery(); renderAdminPhotos(); alert(`${processedCount} fotos adicionadas!`); }
+                input.value = '';
             }
-        }
-
-        function compressImage(file) {
+      }
+      function compressImage(file) {
             return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(file);
+                const reader = new FileReader(); reader.readAsDataURL(file);
                 reader.onload = (event) => {
-                    const img = new Image();
-                    img.src = event.target.result;
+                    const img = new Image(); img.src = event.target.result;
                     img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        const maxWidth = 600; // Tamanho ideal para celular
-                        const scaleSize = maxWidth / img.width;
-                        const newWidth = maxWidth;
-                        const newHeight = img.height * scaleSize;
-
-                        canvas.width = newWidth;
-                        canvas.height = newHeight;
-
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, newWidth, newHeight);
-
-                        // Comprime para JPEG com 60% de qualidade
-                        const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
-                        resolve(dataUrl);
-                    };
-                    img.onerror = (err) => reject(err);
-                };
-                reader.onerror = (err) => reject(err);
+                        const canvas = document.createElement('canvas'); const maxWidth = 600;
+                        const scaleSize = maxWidth / img.width; canvas.width = maxWidth; canvas.height = img.height * scaleSize;
+                        const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        resolve(canvas.toDataURL('image/jpeg', 0.6));
+                    }; img.onerror = (err) => reject(err);
+                }; reader.onerror = (err) => reject(err);
             });
-        }
+      }
+      function saveAdminChanges() {
+            for(let size in prices) { for(let svc in prices[size]) { const input = document.getElementById(`edit-${size}-${svc}`); if(input) prices[size][svc] = parseInt(input.value); } }
+            localStorage.setItem('imperioPrices', JSON.stringify(prices)); calculateTotal(); alert('Salvo!');
+      }
+      function closeModals() {
+            document.getElementById('loginModal').style.display = 'none'; document.getElementById('adminPanel').style.display = 'none'; document.getElementById('adminPass').value = '';
+      }
 
-        function saveAdminChanges() {
-            for(let size in prices) {
-                for(let svc in prices[size]) {
-                    const input = document.getElementById(`edit-${size}-${svc}`);
-                    if(input) prices[size][svc] = parseInt(input.value);
-                }
-            }
-            localStorage.setItem('imperioPrices', JSON.stringify(prices));
-            calculateTotal();
-            alert('Configurações Salvas!');
-        }
-        function closeModals() {
-            document.getElementById('loginModal').style.display = 'none';
-            document.getElementById('adminPanel').style.display = 'none';
-            document.getElementById('adminPass').value = '';
-        }
-    </script>
-
-    <!-- ============================================== -->
-    <!-- CONEXÃO BANCO DE DADOS (SUPABASE - IMPERIOCAR) -->
-    <!-- ============================================== -->
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-    <script>
-      // 1. DADOS DE CONEXÃO
-      const supabaseUrl = 'https://jmivkvtebtjudqhvgc.supabase.co';
-      const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptaXZrdmV0ZWJ0anVkcWh2dmdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ2MjIzMTYsImV4cCI6MjA4MDE5ODMxNn0.WtPrTn0Kvx6o_h_ZfNoAcQGjNDErr0NqT0wt60YLlo0';
-      
-      const supabase = supabase.createClient(supabaseUrl, supabaseKey);
-
-      // 2. LÓGICA DE AGENDAMENTO
+      // --- ENVIO DO AGENDAMENTO (Botão WhatsApp) ---
       const btnZap = document.getElementById('whatsappBtn');
-      
-      // Remove o link original para controlarmos o clique
-      btnZap.removeAttribute('href');
-      btnZap.style.cursor = 'pointer';
+      btnZap.removeAttribute('href'); btnZap.style.cursor = 'pointer';
 
       btnZap.addEventListener('click', async function(e) {
           e.preventDefault(); 
-          
-          const textoOriginal = btnZap.innerHTML;
-          btnZap.innerHTML = '⏳ Verificando...';
+          const textoOriginal = btnZap.innerHTML; btnZap.innerHTML = '⏳ Verificando...';
 
-          // --- COLETAR DADOS DA TELA ---
           const tamanho = document.getElementById('carSize').value;
-          
           let servico = 'Não definido';
-          const radioServico = document.querySelector('input[name="service"]:checked');
-          if(radioServico) servico = radioServico.value;
-
+          const radioServico = document.querySelector('input[name="service"]:checked'); if(radioServico) servico = radioServico.value;
           const pagamento = document.getElementById('paymentMethod').value;
-          
-          const dataFinal = (typeof selectedDayType !== 'undefined' && selectedDayType === 'hoje') 
-                            ? formattedDateToday : formattedDateTomorrow;
-          const horarioFinal = (typeof selectedTime !== 'undefined' && selectedTime) 
-                               ? selectedTime : 'Encaixe';
-
+          const dataFinal = (selectedDayType === 'hoje') ? formattedDateToday : formattedDateTomorrow;
+          const horarioFinal = selectedTime || 'Encaixe';
           const valorTexto = document.getElementById('totalDisplay').innerText;
           const valorNumero = parseFloat(valorTexto.replace('R$', '').replace(',', '.').trim());
 
-          // ==========================================================
-          // 1. TRAVA DE SEGURANÇA (VERIFICA SE O HORÁRIO JÁ ESTÁ CHEIO)
-          // ==========================================================
-          if(horarioFinal !== 'Encaixe') { // "Encaixe" não precisa verificar, aceita vários
-              
-              const { data: agendamentosExistentes, error: erroCheck } = await supabase
+          // 1. CHECAGEM FINAL (Para não agendar duplicado no último segundo)
+          if(horarioFinal !== 'Encaixe') {
+              const { data: agendamentos, error } = await supabase
                   .from('agendamentos_imperio')
                   .select('id')
                   .eq('data_escolhida', dataFinal)
                   .eq('horario', horarioFinal);
 
-              if (agendamentosExistentes && agendamentosExistentes.length > 0) {
-                  // JÁ TEM GENTE! PARA TUDO!
+              if (agendamentos && agendamentos.length > 0) {
                   btnZap.innerHTML = textoOriginal;
-                  alert('⚠️ OPA! Esse horário (' + horarioFinal + ') já foi reservado por outra pessoa agora mesmo.\n\nPor favor, escolha outro horário na lista.');
-                  return; // Sai da função e não faz mais nada
+                  alert('⚠️ ESSE HORÁRIO ACABOU DE SER RESERVADO!\nO sistema atualizou e ele ficará vermelho. Escolha outro.');
+                  loadTimeSlotsWithAvailability(); // Atualiza as cores para vermelho
+                  return;
               }
           }
 
-          // ==========================================================
-          // 2. SALVA NO SUPABASE (SÓ SE ESTIVER LIVRE)
-          // ==========================================================
-          const { error } = await supabase
-            .from('agendamentos_imperio')
-            .insert({
-                data_escolhida: dataFinal,
-                horario: horarioFinal,
-                tamanho_carro: tamanho,
-                servico_nome: servico,
-                valor_cobrado: valorNumero,
-                forma_pagamento: pagamento
-            });
+          // 2. SALVA
+          await supabase.from('agendamentos_imperio').insert({
+                data_escolhida: dataFinal, horario: horarioFinal, tamanho_carro: tamanho,
+                servico_nome: servico, valor_cobrado: valorNumero, forma_pagamento: pagamento
+          });
 
-          if (error) {
-              console.log('Erro ao salvar:', error);
-          }
-
-          // ==========================================================
-          // 3. ABRE O WHATSAPP
-          // ==========================================================
+          // 3. ABRE ZAP
           updateWhatsappLink();
-          const linkFinal = document.getElementById('whatsappBtn').href;
-          
-          window.location.href = linkFinal;
+          window.location.href = document.getElementById('whatsappBtn').href;
           btnZap.innerHTML = textoOriginal;
       });
     </script>
