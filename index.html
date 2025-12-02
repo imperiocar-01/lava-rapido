@@ -7,8 +7,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800;900&display=swap" rel="stylesheet">
     
-    <!-- SUPABASE -->
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <!-- VERSÃO ESTÁVEL DO SUPABASE PARA CELULAR -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
         :root {
@@ -25,7 +25,6 @@
         
         .container { width: 100%; max-width: 600px; margin: 0 auto; padding: 15px; }
         
-        /* VITRINE */
         .gallery-container { position: relative; width: 100%; height: 220px; border-radius: 10px; overflow: hidden; border: 2px solid var(--gold); margin-bottom: 25px; background: #000; }
         .gallery-slide { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 1s; object-fit: cover; }
         .gallery-slide.active { opacity: 1; }
@@ -79,7 +78,7 @@
         <div class="gallery-container" id="galleryContainer"></div>
 
         <div style="background:rgba(184,134,11,0.15); border:1px solid var(--gold-dark); padding:15px; border-radius:8px; font-size:0.85rem; margin-bottom:20px; text-align:center; color:#ddd;">
-            <i class="fas fa-info-circle"></i> Os agendamentos são salvos no sistema e confirmados via WhatsApp.
+            <i class="fas fa-info-circle"></i> Agendamentos são salvos e confirmados no WhatsApp.
         </div>
 
         <div class="section-title">ESCOLHA O DIA</div>
@@ -146,7 +145,7 @@
     </div>
 
     <script>
-        // --- 1. CONFIGURAÇÃO (JÁ PREENCHI COM SUAS CHAVES DO IMPERIOCAR-01) ---
+        // --- 1. CONFIGURAÇÃO OFICIAL (JÁ COM SUAS CHAVES) ---
         const supabaseUrl = 'https://jmivkvtebtjudqhvgc.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptaXZrdmV0ZWJ0anVkcWh2dmdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ2MjIzMTYsImV4cCI6MjA4MDE5ODMxNn0.WtPrTn0Kvx6o_h_ZfNoAcQGjNDErr0NqT0wt60YLlo0';
         
@@ -172,7 +171,6 @@
             "https://images.unsplash.com/photo-1520340356584-7c903ccf70dc?w=600&q=80"
         ];
         
-        // Carrega dados locais (Funciona mesmo sem internet)
         let precos = JSON.parse(localStorage.getItem('precosImperio')) || defaultPrices;
         let galleryPhotos = JSON.parse(localStorage.getItem('imperioPhotos')) || defaultPhotos;
         let currentSlide = 0;
@@ -194,27 +192,26 @@
             calcular();
             initAdminTrigger();
             
-            // GARANTIA: SE O BOTÃO NÃO EXISTIR, ELE NÃO QUEBRA
             const btn = document.getElementById('btnZap');
             if(btn) btn.onclick = processarAgendamento;
         };
 
-        // --- 4. FUNÇÃO DE AGENDAMENTO (BLINDADA) ---
+        // --- 4. FUNÇÃO DE AGENDAMENTO (BLINDADA COM DEBUG) ---
         async function processarAgendamento(e) {
             e.preventDefault();
             const btn = document.getElementById('btnZap');
 
-            // Validação
+            // 1. Validação
             if (!horaSelecionada && horaSelecionada !== 'Encaixe') {
-                alert("⚠️ Por favor, escolha um horário.");
+                alert("⚠️ Por favor, escolha um horário na lista.");
                 return;
             }
 
-            // Visual de carregando
-            btn.innerText = "⏳ Processando...";
+            // 2. Feedback
+            btn.innerText = "💾 Salvando agendamento...";
             btn.disabled = true;
 
-            // 1. Prepara os dados
+            // 3. Prepara dados
             const tamanho = document.getElementById('carSize').value;
             const servicoRadio = document.querySelector('input[name="servico"]:checked');
             const servicoNome = servicoOpcoes.find(s => s.id === servicoRadio.value).nome;
@@ -223,14 +220,14 @@
             const dataStr = getDataFormatada(diaSelecionado);
             const horaMsg = horaSelecionada || "Encaixe";
 
-            // 2. Monta Link do WhatsApp (Isso NUNCA falha)
+            // 4. Link WhatsApp
             const msg = `👑 *NOVO AGENDAMENTO*\n\n🗓 ${dataStr}\n⏰ *${horaMsg}*\n\n🚗 ${tamanho.toUpperCase()}\n🚿 ${servicoNome}\n💰 R$ ${valor}\n💳 ${pag}`;
             const linkZap = `https://wa.me/5511960671570?text=${encodeURIComponent(msg)}`;
 
-            // 3. Tenta salvar no Banco (Agora deve funcionar!)
+            // 5. TENTA SALVAR NO BANCO (AGORA COM MENSAGEM DE ERRO ESPECÍFICA)
             if (supabase) {
                 try {
-                    await supabase.from('agendamentos_imperio').insert({
+                    const { error } = await supabase.from('agendamentos_imperio').insert({
                         data_escolhida: dataStr,
                         horario: horaMsg,
                         tamanho_carro: tamanho,
@@ -238,18 +235,26 @@
                         valor_cobrado: parseFloat(valor.replace(',', '.')),
                         forma_pagamento: pag
                     });
+
+                    if (error) {
+                        // AQUI ESTÁ O SEGREDO: Mostra o erro real
+                        alert("❌ O Banco recusou: " + error.message + "\n\nMas vamos abrir o WhatsApp para você não perder o cliente.");
+                    } else {
+                        // SUCESSO
+                        alert("✅ Agendamento Salvo no Sistema!\nAbrindo WhatsApp...");
+                    }
                 } catch (erroBanco) {
-                    console.log("Banco indisponível, mas vamos abrir o WhatsApp.", erroBanco);
+                    alert("⚠️ Erro de conexão: " + erroBanco.message + "\nAbrindo WhatsApp...");
                 }
             }
 
-            // 4. Redireciona para o WhatsApp
+            // 6. Redireciona
             window.location.href = linkZap;
             
             setTimeout(() => {
                 btn.innerText = "AGENDAR NO WHATSAPP";
                 btn.disabled = false;
-            }, 2000);
+            }, 3000);
         }
 
         // --- 5. LÓGICA DE INTERFACE ---
@@ -311,14 +316,11 @@
                 
                 let classeExtra = '';
                 let bloqueado = false;
-
-                // Bloqueia horários passados
                 if (diaSelecionado === 'hoje') {
                     if (h < horaAtual || (h === horaAtual && m < minAtual)) {
                         classeExtra = 'disabled'; bloqueado = true;
                     }
                 }
-
                 const clickAction = bloqueado ? '' : `onclick="selecionarHora(this, '${horaFormatada}')"`;
                 grid.innerHTML += `<div class="time-btn ${classeExtra}" ${clickAction}>${horaFormatada}</div>`;
                 minutos += 45;
