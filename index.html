@@ -7,8 +7,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800;900&display=swap" rel="stylesheet">
     
-    <!-- CONEXÃO COM O BANCO DE DADOS -->
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <!-- CONEXÃO BANCO DE DADOS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
         :root {
@@ -19,17 +19,20 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Montserrat', sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background-color: var(--black); color: white; padding-bottom: 140px; }
         
+        /* CABEÇALHO */
         .header { background: linear-gradient(to bottom, rgba(0,0,0,0.7), var(--black)), url('https://images.unsplash.com/photo-1601362840469-51e4d8d58785?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'); background-size: cover; background-position: center; text-align: center; padding: 40px 20px 20px 20px; border-bottom: 3px solid var(--gold); }
         .logo h1 { color: var(--gold); font-weight: 900; font-size: 1.8rem; text-transform: uppercase; }
         .logo p { font-size: 0.8rem; letter-spacing: 2px; color: #ddd; }
         
         .container { width: 100%; max-width: 600px; margin: 0 auto; padding: 15px; }
         
+        /* GALERIA */
         .gallery-container { position: relative; width: 100%; height: 220px; border-radius: 10px; overflow: hidden; border: 2px solid var(--gold); margin-bottom: 25px; background: #000; }
         .gallery-slide { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 1s; object-fit: cover; }
         .gallery-slide.active { opacity: 1; }
         .gallery-caption { position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.7); color: var(--gold); padding: 5px 10px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
 
+        /* SEÇÕES E BOTÕES */
         .section-title { font-size: 1rem; color: var(--gold); margin: 25px 0 10px 0; text-transform: uppercase; font-weight: 800; display: flex; align-items: center; gap: 10px; }
         .section-title::after { content: ''; flex: 1; height: 1px; background: #333; }
         
@@ -78,7 +81,7 @@
         <div class="gallery-container" id="galleryContainer"></div>
 
         <div style="background:rgba(184,134,11,0.15); border:1px solid var(--gold-dark); padding:15px; border-radius:8px; font-size:0.85rem; margin-bottom:20px; text-align:center; color:#ddd;">
-            <i class="fas fa-info-circle"></i> Os agendamentos são confirmados via WhatsApp.
+            <i class="fas fa-info-circle"></i> Agendamentos são salvos e confirmados no WhatsApp.
         </div>
 
         <div class="section-title">ESCOLHA O DIA</div>
@@ -145,14 +148,22 @@
     </div>
 
     <script>
-        // --- 1. CONFIGURAÇÃO DO SEU BANCO DE DADOS ---
+        // ======================================================
+        // 1. CONFIGURAÇÃO (JÁ PREENCHIDA COM SEUS DADOS)
+        // ======================================================
         const supabaseUrl = 'https://jmivkvtebtjudqhvgc.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptaXZrdmV0ZWJ0anVkcWh2dmdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ2MjIzMTYsImV4cCI6MjA4MDE5ODMxNn0.WtPrTn0Kvx6o_h_ZfNoAcQGjNDErr0NqT0wt60YLlo0';
         
         let supabase = null;
-        try { supabase = window.supabase.createClient(supabaseUrl, supabaseKey); } catch (e) { console.error("Erro Supabase", e); }
+        try { 
+            supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        } catch (e) { 
+            console.error("Erro Supabase", e);
+        }
 
-        // --- 2. VARIÁVEIS GLOBAIS ---
+        // ======================================================
+        // 2. VARIÁVEIS GLOBAIS
+        // ======================================================
         let diaSelecionado = 'hoje';
         let horaSelecionada = null;
         
@@ -167,7 +178,6 @@
             "https://images.unsplash.com/photo-1520340356584-7c903ccf70dc?w=600&q=80"
         ];
         
-        // Carrega dados locais (Funciona mesmo sem internet)
         let precos = JSON.parse(localStorage.getItem('precosImperio')) || defaultPrices;
         let galleryPhotos = JSON.parse(localStorage.getItem('imperioPhotos')) || defaultPhotos;
         let currentSlide = 0;
@@ -180,35 +190,40 @@
             { id: 'higienizacao', nome: 'Higienização', desc: 'Interna Profunda' }
         ];
 
-        // --- 3. INICIALIZAR ---
+        // ======================================================
+        // 3. INICIALIZAR
+        // ======================================================
         window.onload = function() {
             initGallery();
             renderizarDatas();
             renderizarServicos();
-            gerarHorariosSimples(); // Versão rápida
+            gerarHorariosSimples(); 
             calcular();
             initAdminTrigger();
             
-            // Botão de Agendamento
-            document.getElementById('btnZap').onclick = processarAgendamento;
+            // Ativa botão
+            const btn = document.getElementById('btnZap');
+            if(btn) btn.onclick = processarAgendamento;
         };
 
-        // --- 4. FUNÇÃO DE AGENDAMENTO (BLINDADA) ---
+        // ======================================================
+        // 4. FUNÇÃO DE AGENDAMENTO (SALVA E ENVIA)
+        // ======================================================
         async function processarAgendamento(e) {
             e.preventDefault();
             const btn = document.getElementById('btnZap');
 
-            // Validação
+            // 1. Validação
             if (!horaSelecionada && horaSelecionada !== 'Encaixe') {
-                alert("⚠️ Por favor, escolha um horário.");
+                alert("⚠️ Por favor, escolha um horário na lista.");
                 return;
             }
 
-            // Visual de carregando
-            btn.innerText = "⏳ Processando...";
+            // 2. Feedback visual
+            btn.innerText = "💾 Salvando agendamento...";
             btn.disabled = true;
 
-            // 1. Prepara os dados
+            // 3. Coleta dados
             const tamanho = document.getElementById('carSize').value;
             const servicoRadio = document.querySelector('input[name="servico"]:checked');
             const servicoNome = servicoOpcoes.find(s => s.id === servicoRadio.value).nome;
@@ -217,11 +232,11 @@
             const dataStr = getDataFormatada(diaSelecionado);
             const horaMsg = horaSelecionada || "Encaixe";
 
-            // 2. Monta Link do WhatsApp (Isso NUNCA falha)
+            // 4. Cria link WhatsApp
             const msg = `👑 *NOVO AGENDAMENTO*\n\n🗓 ${dataStr}\n⏰ *${horaMsg}*\n\n🚗 ${tamanho.toUpperCase()}\n🚿 ${servicoNome}\n💰 R$ ${valor}\n💳 ${pag}`;
             const linkZap = `https://wa.me/5511960671570?text=${encodeURIComponent(msg)}`;
 
-            // 3. Tenta salvar no Banco (Agora com o banco liberado, deve funcionar!)
+            // 5. Salva no Supabase (Agora que você liberou o SQL, isso funciona!)
             if (supabase) {
                 try {
                     await supabase.from('agendamentos_imperio').insert({
@@ -232,21 +247,24 @@
                         valor_cobrado: parseFloat(valor.replace(',', '.')),
                         forma_pagamento: pag
                     });
-                } catch (erroBanco) {
-                    console.log("Banco indisponível, mas vamos abrir o WhatsApp.", erroBanco);
+                } catch (erro) {
+                    console.log("Erro banco:", erro);
+                    // Se der erro, segue pro Zap igual
                 }
             }
 
-            // 4. Redireciona para o WhatsApp
+            // 6. Redireciona
             window.location.href = linkZap;
             
             setTimeout(() => {
                 btn.innerText = "AGENDAR NO WHATSAPP";
                 btn.disabled = false;
-            }, 2000);
+            }, 3000);
         }
 
-        // --- 5. LÓGICA DE INTERFACE ---
+        // ======================================================
+        // 5. FUNÇÕES DE TELA (Data, Hora, Preço)
+        // ======================================================
         function getDataFormatada(tipo) {
             const hoje = new Date();
             const amanha = new Date(hoje); amanha.setDate(hoje.getDate() + 1);
@@ -292,8 +310,6 @@
         function gerarHorariosSimples() {
             const grid = document.getElementById('gridHorarios');
             grid.innerHTML = '';
-
-            // Botão Encaixe
             grid.innerHTML += `<div class="time-btn" style="grid-column:1/-1; background:rgba(255,68,68,0.2); color:#ffaaaa; border:1px solid red;" onclick="selecionarHora(this, 'Encaixe')">ENCAIXE (Sem hora fixa)</div>`;
 
             let minutos = 8 * 60; 
@@ -307,14 +323,11 @@
                 
                 let classeExtra = '';
                 let bloqueado = false;
-
-                // Bloqueia horários passados
                 if (diaSelecionado === 'hoje') {
                     if (h < horaAtual || (h === horaAtual && m < minAtual)) {
                         classeExtra = 'disabled'; bloqueado = true;
                     }
                 }
-
                 const clickAction = bloqueado ? '' : `onclick="selecionarHora(this, '${horaFormatada}')"`;
                 grid.innerHTML += `<div class="time-btn ${classeExtra}" ${clickAction}>${horaFormatada}</div>`;
                 minutos += 45;
@@ -338,12 +351,13 @@
                 const valor = precos[tamanho][s.id];
                 document.getElementById(`tag-${s.id}`).innerText = `R$ ${valor}`;
             });
-
             const total = precos[tamanho][servicoId];
             document.getElementById('valorTotal').innerText = `R$ ${total},00`;
         }
 
-        // --- 6. GALERIA E ADMIN ---
+        // ======================================================
+        // 6. GALERIA E ADMIN
+        // ======================================================
         function initGallery() {
             const container = document.getElementById('galleryContainer');
             container.innerHTML = '';
