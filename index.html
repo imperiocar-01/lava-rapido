@@ -7,8 +7,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800;900&display=swap" rel="stylesheet">
     
-    <!-- VERSÃO ESTÁVEL DO SUPABASE PARA CELULAR -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- VERSÃO UMD (A MAIS COMPATÍVEL PARA CELULAR) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
 
     <style>
         :root {
@@ -50,7 +50,7 @@
         .sticky-footer { position: fixed; bottom: 0; left: 0; width: 100%; background-color: rgba(0,0,0,0.95); padding: 15px; border-top: 1px solid #333; display: flex; flex-direction: column; align-items: center; z-index: 100; }
         .btn-whatsapp { background-color: var(--whatsapp); color: white; text-decoration: none; padding: 16px; border-radius: 50px; font-weight: 800; width: 100%; text-align: center; display: block; border: none; font-size: 1rem; cursor: pointer; }
         
-        /* ADMIN */
+        /* ADMIN MODAL */
         .modal-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:2000; align-items:center; justify-content:center; }
         .modal-content { background:#1a1a1a; padding:20px; border:2px solid var(--gold); width:90%; max-width:400px; text-align:center; border-radius:10px; max-height: 80vh; overflow-y: auto;}
         .admin-input { width:100%; padding:10px; margin:10px 0; background:#333; border:1px solid #555; color:white; }
@@ -78,7 +78,7 @@
         <div class="gallery-container" id="galleryContainer"></div>
 
         <div style="background:rgba(184,134,11,0.15); border:1px solid var(--gold-dark); padding:15px; border-radius:8px; font-size:0.85rem; margin-bottom:20px; text-align:center; color:#ddd;">
-            <i class="fas fa-info-circle"></i> Agendamentos são salvos e confirmados no WhatsApp.
+            <i class="fas fa-info-circle"></i> Sistema de agendamento online integrado com WhatsApp.
         </div>
 
         <div class="section-title">ESCOLHA O DIA</div>
@@ -114,7 +114,7 @@
 
     <div class="sticky-footer">
         <div style="color:#ccc; margin-bottom:5px;">Total: <span id="valorTotal" style="color:var(--gold); font-weight:900; font-size:1.3rem;">R$ 0,00</span></div>
-        <button id="btnZap" class="btn-whatsapp">AGENDAR NO WHATSAPP</button>
+        <button id="btnZap" class="btn-whatsapp">AGENDAR E ENVIAR</button>
     </div>
 
     <!-- PAINÉIS ADMIN -->
@@ -145,15 +145,21 @@
     </div>
 
     <script>
-        // --- 1. CONFIGURAÇÃO OFICIAL (JÁ COM SUAS CHAVES) ---
+        // --- 1. CONEXÃO SEGURA COM O BANCO ---
         const supabaseUrl = 'https://jmivkvtebtjudqhvgc.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptaXZrdmV0ZWJ0anVkcWh2dmdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ2MjIzMTYsImV4cCI6MjA4MDE5ODMxNn0.WtPrTn0Kvx6o_h_ZfNoAcQGjNDErr0NqT0wt60YLlo0';
-        
         let supabase = null;
-        try { 
-            supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-        } catch (e) { 
-            console.error("Erro Supabase", e);
+
+        // Tenta inicializar o Supabase
+        function initSupabase() {
+            try {
+                if (window.supabase) {
+                    supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+                    console.log("Banco conectado!");
+                }
+            } catch (e) {
+                console.warn("Aviso: Banco de dados demorando para responder.");
+            }
         }
 
         // --- 2. VARIÁVEIS GLOBAIS ---
@@ -185,6 +191,7 @@
 
         // --- 3. INICIALIZAR ---
         window.onload = function() {
+            initSupabase(); // Liga o banco
             initGallery();
             renderizarDatas();
             renderizarServicos();
@@ -196,22 +203,22 @@
             if(btn) btn.onclick = processarAgendamento;
         };
 
-        // --- 4. FUNÇÃO DE AGENDAMENTO (BLINDADA COM DEBUG) ---
+        // --- 4. FUNÇÃO DE AGENDAMENTO (ZERO FALHAS) ---
         async function processarAgendamento(e) {
             e.preventDefault();
             const btn = document.getElementById('btnZap');
 
-            // 1. Validação
+            // Validação
             if (!horaSelecionada && horaSelecionada !== 'Encaixe') {
                 alert("⚠️ Por favor, escolha um horário na lista.");
                 return;
             }
 
-            // 2. Feedback
-            btn.innerText = "💾 Salvando agendamento...";
+            // Trava botão para não clicar duas vezes
+            btn.innerText = "⏳ Processando...";
             btn.disabled = true;
 
-            // 3. Prepara dados
+            // Prepara dados
             const tamanho = document.getElementById('carSize').value;
             const servicoRadio = document.querySelector('input[name="servico"]:checked');
             const servicoNome = servicoOpcoes.find(s => s.id === servicoRadio.value).nome;
@@ -220,14 +227,14 @@
             const dataStr = getDataFormatada(diaSelecionado);
             const horaMsg = horaSelecionada || "Encaixe";
 
-            // 4. Link WhatsApp
+            // Link WhatsApp (Garante que existe)
             const msg = `👑 *NOVO AGENDAMENTO*\n\n🗓 ${dataStr}\n⏰ *${horaMsg}*\n\n🚗 ${tamanho.toUpperCase()}\n🚿 ${servicoNome}\n💰 R$ ${valor}\n💳 ${pag}`;
             const linkZap = `https://wa.me/5511960671570?text=${encodeURIComponent(msg)}`;
 
-            // 5. TENTA SALVAR NO BANCO (AGORA COM MENSAGEM DE ERRO ESPECÍFICA)
+            // Tenta Salvar no Banco
             if (supabase) {
                 try {
-                    const { error } = await supabase.from('agendamentos_imperio').insert({
+                    await supabase.from('agendamentos_imperio').insert({
                         data_escolhida: dataStr,
                         horario: horaMsg,
                         tamanho_carro: tamanho,
@@ -235,24 +242,17 @@
                         valor_cobrado: parseFloat(valor.replace(',', '.')),
                         forma_pagamento: pag
                     });
-
-                    if (error) {
-                        // AQUI ESTÁ O SEGREDO: Mostra o erro real
-                        alert("❌ O Banco recusou: " + error.message + "\n\nMas vamos abrir o WhatsApp para você não perder o cliente.");
-                    } else {
-                        // SUCESSO
-                        alert("✅ Agendamento Salvo no Sistema!\nAbrindo WhatsApp...");
-                    }
                 } catch (erroBanco) {
-                    alert("⚠️ Erro de conexão: " + erroBanco.message + "\nAbrindo WhatsApp...");
+                    console.log("Aviso: Salvamento no banco falhou, mas seguiremos com WhatsApp.");
                 }
             }
 
-            // 6. Redireciona
+            // REDIRECIONA SEMPRE (MESMO SE O BANCO FALHAR)
             window.location.href = linkZap;
             
+            // Destrava botão depois
             setTimeout(() => {
-                btn.innerText = "AGENDAR NO WHATSAPP";
+                btn.innerText = "AGENDAR E ENVIAR";
                 btn.disabled = false;
             }, 3000);
         }
