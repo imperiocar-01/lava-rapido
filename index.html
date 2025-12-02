@@ -51,7 +51,14 @@
         .price-tag { color: var(--gold); font-weight: bold; }
         
         .sticky-footer { position: fixed; bottom: 0; left: 0; width: 100%; background-color: rgba(0,0,0,0.95); padding: 15px; border-top: 1px solid #333; display: flex; flex-direction: column; align-items: center; z-index: 100; }
-        .btn-whatsapp { background-color: var(--whatsapp); color: white; text-decoration: none; padding: 16px; border-radius: 50px; font-weight: 800; width: 100%; text-align: center; display: block; border: none; font-size: 1rem; cursor: pointer; }
+        .btn-whatsapp { background-color: var(--whatsapp); color: white; text-decoration: none; padding: 16px; border-radius: 50px; font-weight: 800; width: 100%; text-align: center; display: block; border: none; font-size: 1rem; cursor: pointer; transition: all 0.3s; }
+        .btn-whatsapp:disabled { opacity: 0.7; cursor: not-allowed; }
+        .btn-whatsapp.loading { position: relative; padding-right: 50px; }
+        .btn-whatsapp.loading::after { content: ''; position: absolute; right: 20px; top: 50%; width: 20px; height: 20px; border: 2px solid white; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; transform: translateY(-50%); }
+        
+        @keyframes spin {
+            to { transform: translateY(-50%) rotate(360deg); }
+        }
         
         /* ADMIN MODAL */
         .modal-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:2000; align-items:center; justify-content:center; }
@@ -117,7 +124,7 @@
 
     <div class="sticky-footer">
         <div style="color:#ccc; margin-bottom:5px;">Total: <span id="valorTotal" style="color:var(--gold); font-weight:900; font-size:1.3rem;">R$ 0,00</span></div>
-        <button id="btnZap" class="btn-whatsapp">AGENDAR NO WHATSAPP</button>
+        <button id="btnZap" class="btn-whatsapp" onclick="processarAgendamento(event)">AGENDAR NO WHATSAPP</button>
     </div>
 
     <!-- PAINÉIS ADMIN -->
@@ -149,7 +156,7 @@
 
     <script>
         // ======================================================
-        // 1. CONFIGURAÇÃO (JÁ PREENCHIDA COM SEUS DADOS)
+        // 1. CONFIGURAÇÃO SUPABASE
         // ======================================================
         const supabaseUrl = 'https://jmivkvtebtjudqhvgc.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptaXZrdmV0ZWJ0anVkcWh2dmdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ2MjIzMTYsImV4cCI6MjA4MDE5ODMxNn0.WtPrTn0Kvx6o_h_ZfNoAcQGjNDErr0NqT0wt60YLlo0';
@@ -157,6 +164,7 @@
         let supabase = null;
         try { 
             supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+            console.log("Supabase conectado com sucesso");
         } catch (e) { 
             console.error("Erro Supabase", e);
         }
@@ -194,6 +202,7 @@
         // 3. INICIALIZAR
         // ======================================================
         window.onload = function() {
+            console.log("Página carregada, iniciando...");
             initGallery();
             renderizarDatas();
             renderizarServicos();
@@ -201,18 +210,20 @@
             calcular();
             initAdminTrigger();
             
-            // Ativa botão
+            // Botão já tem onclick no HTML, mas garantimos
             const btn = document.getElementById('btnZap');
-            if(btn) btn.onclick = processarAgendamento;
+            if(btn) {
+                btn.onclick = processarAgendamento;
+            }
         };
 
         // ======================================================
-        // 4. FUNÇÃO DE AGENDAMENTO (SALVA E ENVIA)
+        // 4. FUNÇÃO DE AGENDAMENTO (SALVA E ENVIA) - CORRIGIDA
         // ======================================================
         async function processarAgendamento(e) {
-            e.preventDefault();
+            if (e) e.preventDefault();
             const btn = document.getElementById('btnZap');
-
+            
             // 1. Validação
             if (!horaSelecionada && horaSelecionada !== 'Encaixe') {
                 alert("⚠️ Por favor, escolha um horário na lista.");
@@ -220,46 +231,72 @@
             }
 
             // 2. Feedback visual
-            btn.innerText = "💾 Salvando agendamento...";
+            const textoOriginal = btn.innerText;
+            btn.innerText = "💾 Salvando...";
+            btn.classList.add('loading');
             btn.disabled = true;
 
-            // 3. Coleta dados
-            const tamanho = document.getElementById('carSize').value;
-            const servicoRadio = document.querySelector('input[name="servico"]:checked');
-            const servicoNome = servicoOpcoes.find(s => s.id === servicoRadio.value).nome;
-            const valor = document.getElementById('valorTotal').innerText.replace('R$ ', '');
-            const pag = document.getElementById('pagamento').value;
-            const dataStr = getDataFormatada(diaSelecionado);
-            const horaMsg = horaSelecionada || "Encaixe";
+            try {
+                // 3. Coleta dados
+                const tamanho = document.getElementById('carSize').value;
+                const servicoRadio = document.querySelector('input[name="servico"]:checked');
+                const servicoId = servicoRadio ? servicoRadio.value : 'simples';
+                const servico = servicosOpcoes.find(s => s.id === servicoId);
+                const valorTotal = document.getElementById('valorTotal').innerText;
+                const pag = document.getElementById('pagamento').value;
+                const dataStr = getDataFormatada(diaSelecionado);
+                const horaMsg = horaSelecionada || "Encaixe";
 
-            // 4. Cria link WhatsApp
-            const msg = `👑 *NOVO AGENDAMENTO*\n\n🗓 ${dataStr}\n⏰ *${horaMsg}*\n\n🚗 ${tamanho.toUpperCase()}\n🚿 ${servicoNome}\n💰 R$ ${valor}\n💳 ${pag}`;
-            const linkZap = `https://wa.me/5511960671570?text=${encodeURIComponent(msg)}`;
+                // 4. Salva no Supabase (se conectado)
+                if (supabase) {
+                    try {
+                        const { error } = await supabase.from('agendamentos_imperio').insert({
+                            data_escolhida: dataStr,
+                            horario: horaMsg,
+                            tamanho_carro: tamanho,
+                            servico_nome: servico.nome,
+                            valor_cobrado: parseFloat(valorTotal.replace('R$ ', '').replace(',', '.')),
+                            forma_pagamento: pag,
+                            data_criacao: new Date().toISOString()
+                        });
 
-            // 5. Salva no Supabase (Agora que você liberou o SQL, isso funciona!)
-            if (supabase) {
-                try {
-                    await supabase.from('agendamentos_imperio').insert({
-                        data_escolhida: dataStr,
-                        horario: horaMsg,
-                        tamanho_carro: tamanho,
-                        servico_nome: servicoNome,
-                        valor_cobrado: parseFloat(valor.replace(',', '.')),
-                        forma_pagamento: pag
-                    });
-                } catch (erro) {
-                    console.log("Erro banco:", erro);
-                    // Se der erro, segue pro Zap igual
+                        if (error) throw error;
+                        console.log("Agendamento salvo no Supabase");
+                    } catch (erro) {
+                        console.error("Erro ao salvar no banco:", erro);
+                        // Continua mesmo com erro no banco
+                    }
                 }
-            }
 
-            // 6. Redireciona
-            window.location.href = linkZap;
-            
-            setTimeout(() => {
-                btn.innerText = "AGENDAR NO WHATSAPP";
+                // 5. Cria link WhatsApp
+                const msg = `👑 *NOVO AGENDAMENTO - ImpérioCar* 🚗\n\n🗓 *Data:* ${dataStr}\n⏰ *Horário:* ${horaMsg}\n\n🚗 *Veículo:* ${tamanho.toUpperCase()}\n🚿 *Serviço:* ${servico.nome}\n💰 *Valor:* ${valorTotal}\n💳 *Pagamento:* ${pag}\n\n📍 *Endereço:* Rua Giovanni Segantini, 257A - José Bonifácio/SP`;
+                const telefone = "5511960671570";
+                const linkZap = `https://wa.me/${telefone}?text=${encodeURIComponent(msg)}`;
+
+                // 6. Pequeno delay para mostrar o loading
+                setTimeout(() => {
+                    // Abre o WhatsApp em nova aba
+                    window.open(linkZap, '_blank');
+                    
+                    // Restaura botão
+                    btn.innerText = textoOriginal;
+                    btn.classList.remove('loading');
+                    btn.disabled = false;
+                    
+                    // Limpa seleção para próximo agendamento
+                    horaSelecionada = null;
+                    document.querySelectorAll('.time-btn.selected').forEach(b => b.classList.remove('selected'));
+                }, 800);
+
+            } catch (error) {
+                console.error("Erro no agendamento:", error);
+                alert("Ocorreu um erro ao processar o agendamento. Tente novamente.");
+                
+                // Restaura botão mesmo em caso de erro
+                btn.innerText = textoOriginal;
+                btn.classList.remove('loading');
                 btn.disabled = false;
-            }, 3000);
+            }
         }
 
         // ======================================================
@@ -267,7 +304,8 @@
         // ======================================================
         function getDataFormatada(tipo) {
             const hoje = new Date();
-            const amanha = new Date(hoje); amanha.setDate(hoje.getDate() + 1);
+            const amanha = new Date(hoje); 
+            amanha.setDate(hoje.getDate() + 1);
             const diasSemana = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
             const dataObj = tipo === 'hoje' ? hoje : amanha;
             return `${dataObj.getDate().toString().padStart(2,'0')}/${(dataObj.getMonth()+1).toString().padStart(2,'0')} (${diasSemana[dataObj.getDay()]})`;
@@ -275,7 +313,8 @@
 
         function renderizarDatas() {
             const hoje = new Date();
-            const amanha = new Date(hoje); amanha.setDate(hoje.getDate() + 1);
+            const amanha = new Date(hoje); 
+            amanha.setDate(hoje.getDate() + 1);
             const formatar = (d) => `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}`;
             document.getElementById('labelToday').innerText = formatar(hoje);
             document.getElementById('labelTomorrow').innerText = formatar(amanha);
@@ -310,6 +349,8 @@
         function gerarHorariosSimples() {
             const grid = document.getElementById('gridHorarios');
             grid.innerHTML = '';
+            
+            // Botão de Encaixe
             grid.innerHTML += `<div class="time-btn" style="grid-column:1/-1; background:rgba(255,68,68,0.2); color:#ffaaaa; border:1px solid red;" onclick="selecionarHora(this, 'Encaixe')">ENCAIXE (Sem hora fixa)</div>`;
 
             let minutos = 8 * 60; 
@@ -323,11 +364,15 @@
                 
                 let classeExtra = '';
                 let bloqueado = false;
+                
+                // Se for hoje e horário já passou, bloqueia
                 if (diaSelecionado === 'hoje') {
                     if (h < horaAtual || (h === horaAtual && m < minAtual)) {
-                        classeExtra = 'disabled'; bloqueado = true;
+                        classeExtra = 'disabled'; 
+                        bloqueado = true;
                     }
                 }
+                
                 const clickAction = bloqueado ? '' : `onclick="selecionarHora(this, '${horaFormatada}')"`;
                 grid.innerHTML += `<div class="time-btn ${classeExtra}" ${clickAction}>${horaFormatada}</div>`;
                 minutos += 45;
@@ -335,11 +380,15 @@
         }
 
         function selecionarHora(el, hora) {
+            // Remove seleção de todos
             document.querySelectorAll('.time-btn').forEach(b => {
                 if(!b.classList.contains('disabled')) b.classList.remove('selected');
             });
+            
+            // Adiciona seleção no clicado
             el.classList.add('selected');
             horaSelecionada = hora;
+            console.log("Horário selecionado:", hora);
         }
 
         function calcular() {
@@ -347,12 +396,18 @@
             const servicoRadio = document.querySelector('input[name="servico"]:checked');
             const servicoId = servicoRadio ? servicoRadio.value : 'simples';
             
+            // Atualiza preços individuais
             servicosOpcoes.forEach(s => {
                 const valor = precos[tamanho][s.id];
-                document.getElementById(`tag-${s.id}`).innerText = `R$ ${valor}`;
+                const element = document.getElementById(`tag-${s.id}`);
+                if (element) {
+                    element.innerText = `R$ ${valor}`;
+                }
             });
+            
+            // Calcula total
             const total = precos[tamanho][servicoId];
-            document.getElementById('valorTotal').innerText = `R$ ${total},00`;
+            document.getElementById('valorTotal').innerText = `R$ ${total}`;
         }
 
         // ======================================================
@@ -361,23 +416,30 @@
         function initGallery() {
             const container = document.getElementById('galleryContainer');
             container.innerHTML = '';
+            
             if(galleryPhotos.length === 0) {
                 container.innerHTML = '<div style="color:white; display:flex; justify-content:center; align-items:center; height:100%;">Sem fotos na vitrine</div><div class="gallery-caption">Adicione fotos no Admin</div>';
                 return;
             }
+            
             galleryPhotos.forEach((url, index) => {
                 const img = document.createElement('img');
                 img.src = url;
                 img.className = index === 0 ? 'gallery-slide active' : 'gallery-slide';
                 container.appendChild(img);
             });
+            
             const caption = document.createElement('div');
             caption.className = 'gallery-caption';
             caption.innerHTML = 'Resultado Final ✨';
             container.appendChild(caption);
+            
             if (slideInterval) clearInterval(slideInterval);
-            if (galleryPhotos.length > 1) { slideInterval = setInterval(nextSlide, 3000); }
+            if (galleryPhotos.length > 1) { 
+                slideInterval = setInterval(nextSlide, 3000); 
+            }
         }
+        
         function nextSlide() {
             const slides = document.querySelectorAll('.gallery-slide');
             if (slides.length === 0) return;
@@ -385,22 +447,33 @@
             currentSlide = (currentSlide + 1) % slides.length;
             slides[currentSlide].classList.add('active');
         }
-        let clicks = 0;
+        
+        let adminClicks = 0;
         function initAdminTrigger() {
-            document.getElementById('crownLogo').onclick = () => {
-                clicks++;
-                if(clicks===5) { document.getElementById('modalLogin').style.display='flex'; clicks=0; }
-                setTimeout(()=>clicks=0, 2000);
-            };
+            const logo = document.getElementById('crownLogo');
+            if (logo) {
+                logo.onclick = () => {
+                    adminClicks++;
+                    if(adminClicks === 5) { 
+                        document.getElementById('modalLogin').style.display='flex'; 
+                        adminClicks = 0; 
+                    }
+                    setTimeout(() => adminClicks = 0, 2000);
+                };
+            }
         }
+        
         function logarAdmin() {
             if(document.getElementById('senhaAdmin').value === '#Ccjj9842$') {
                 document.getElementById('modalLogin').style.display='none';
                 document.getElementById('painelAdmin').style.display='flex';
                 montarEditorPrecos();
                 renderAdminPhotos();
-            } else alert('Senha errada');
+            } else {
+                alert('Senha errada');
+            }
         }
+        
         function montarEditorPrecos() {
             const div = document.getElementById('editorPrecos');
             div.innerHTML = '';
@@ -414,25 +487,42 @@
                 }
             }
         }
+        
         function salvarPrecos() {
-            for(let tam in precos) { for(let s in precos[tam]) { precos[tam][s] = Number(document.getElementById(`p-${tam}-${s}`).value); } }
+            for(let tam in precos) { 
+                for(let s in precos[tam]) { 
+                    const input = document.getElementById(`p-${tam}-${s}`);
+                    if (input) {
+                        precos[tam][s] = Number(input.value); 
+                    }
+                } 
+            }
             localStorage.setItem('precosImperio', JSON.stringify(precos));
             localStorage.setItem('imperioPhotos', JSON.stringify(galleryPhotos));
             alert('Tudo salvo!');
             document.getElementById('painelAdmin').style.display='none';
-            calcular(); initGallery();
+            calcular(); 
+            initGallery();
         }
+        
         function renderAdminPhotos() {
-            const container = document.getElementById('adminPhotoGrid'); container.innerHTML = '';
+            const container = document.getElementById('adminPhotoGrid'); 
+            container.innerHTML = '';
             galleryPhotos.forEach((url, index) => {
-                const div = document.createElement('div'); div.className = 'admin-photo-item';
+                const div = document.createElement('div'); 
+                div.className = 'admin-photo-item';
                 div.innerHTML = `<img src="${url}"><button class="delete-btn" onclick="deletePhoto(${index})">X</button>`;
                 container.appendChild(div);
             });
         }
+        
         function deletePhoto(index) {
-            if(confirm('Apagar foto?')) { galleryPhotos.splice(index, 1); renderAdminPhotos(); }
+            if(confirm('Apagar foto?')) { 
+                galleryPhotos.splice(index, 1); 
+                renderAdminPhotos(); 
+            }
         }
+        
         async function handleFileUpload(input) {
             if (input.files && input.files.length > 0) {
                 let processedCount = 0;
@@ -440,25 +530,40 @@
                     const file = input.files[i];
                     try {
                         const resizedBase64 = await compressImage(file);
-                        galleryPhotos.push(resizedBase64); processedCount++;
-                    } catch (err) { console.error("Erro", err); }
+                        galleryPhotos.push(resizedBase64); 
+                        processedCount++;
+                    } catch (err) { 
+                        console.error("Erro ao processar imagem", err); 
+                    }
                 }
-                if(processedCount > 0) { renderAdminPhotos(); alert(`${processedCount} fotos prontas! Clique em SALVAR ALTERAÇÕES.`); }
+                if(processedCount > 0) { 
+                    renderAdminPhotos(); 
+                    alert(`${processedCount} fotos prontas! Clique em SALVAR ALTERAÇÕES.`); 
+                }
                 input.value = '';
             }
         }
+        
         function compressImage(file) {
             return new Promise((resolve, reject) => {
-                const reader = new FileReader(); reader.readAsDataURL(file);
+                const reader = new FileReader(); 
+                reader.readAsDataURL(file);
                 reader.onload = (event) => {
-                    const img = new Image(); img.src = event.target.result;
+                    const img = new Image(); 
+                    img.src = event.target.result;
                     img.onload = () => {
-                        const canvas = document.createElement('canvas'); const maxWidth = 600;
-                        const scaleSize = maxWidth / img.width; canvas.width = maxWidth; canvas.height = img.height * scaleSize;
-                        const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        const canvas = document.createElement('canvas'); 
+                        const maxWidth = 600;
+                        const scaleSize = maxWidth / img.width; 
+                        canvas.width = maxWidth; 
+                        canvas.height = img.height * scaleSize;
+                        const ctx = canvas.getContext('2d'); 
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                         resolve(canvas.toDataURL('image/jpeg', 0.6));
-                    }; img.onerror = (err) => reject(err);
-                }; reader.onerror = (err) => reject(err);
+                    }; 
+                    img.onerror = (err) => reject(err);
+                }; 
+                reader.onerror = (err) => reject(err);
             });
         }
     </script>
