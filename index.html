@@ -11,7 +11,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
-        :root { --gold: #FFD700; --black: #111; --gray: #222; --green: #25D366; --red: #ff4444; }
+        :root { --gold: #FFD700; --black: #111; --gray: #222; --green: #25D366; }
         * { box-sizing: border-box; font-family: 'Montserrat', sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background: var(--black); color: white; margin: 0; padding-bottom: 90px; }
 
@@ -21,37 +21,17 @@
         .container { padding: 20px; max-width: 600px; margin: 0 auto; }
         .section-title { color: var(--gold); font-size: 0.9rem; font-weight: 800; margin: 20px 0 10px 0; border-bottom: 1px solid #333; padding-bottom: 5px; }
         
-        /* DATA */
         .date-selector { display: flex; gap: 10px; }
         .date-btn { flex: 1; padding: 15px; background: var(--gray); border: 1px solid #444; color: #ccc; border-radius: 8px; cursor: pointer; text-align: center; }
         .date-btn.selected { background: var(--gold); color: black; font-weight: bold; border-color: var(--gold); }
         
-        /* GRID HORARIOS */
         .time-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 10px; }
         .time-btn { padding: 12px 5px; background: var(--gray); border: 1px solid #444; color: white; border-radius: 6px; text-align: center; font-size: 0.85rem; cursor: pointer; transition: 0.2s; }
-        
-        /* ESTADOS DO BOTÃO */
         .time-btn.selected { background: var(--gold); color: black; font-weight: bold; transform: scale(1.05); }
         
-        /* BLOQUEADO (Passou da hora OU Já tem dono) */
-        .time-btn.disabled { 
-            background: #151515; 
-            color: #444; 
-            border-color: #222; 
-            text-decoration: line-through; 
-            cursor: not-allowed; 
-            pointer-events: none; /* Impede clique */
-        }
-        
-        /* DESTAQUE PARA OCUPADO */
-        .time-btn.occupied {
-            background: #3a0000;
-            color: #ff5555;
-            border-color: #500;
-            text-decoration: line-through;
-            cursor: not-allowed;
-            pointer-events: none;
-        }
+        /* ESTILOS DE BLOQUEIO */
+        .time-btn.disabled { background: #151515; color: #444; border-color: #222; text-decoration: line-through; pointer-events: none; }
+        .time-btn.occupied { background: #3a0000; color: #ff5555; border-color: #500; text-decoration: line-through; pointer-events: none; }
 
         select, input { width: 100%; padding: 15px; background: var(--gray); border: 1px solid #333; color: white; border-radius: 8px; font-size: 1rem; margin-bottom: 10px; outline: none; }
         
@@ -104,6 +84,14 @@
         <!-- NOME -->
         <div class="section-title">5. SEU NOME</div>
         <input type="text" id="nomeCliente" placeholder="Digite seu nome...">
+        
+        <!-- PAGAMENTO -->
+        <div class="section-title">6. PAGAMENTO</div>
+        <select id="pagamento">
+            <option>Pix</option>
+            <option>Cartão</option>
+            <option>Dinheiro</option>
+        </select>
         
         <div style="height: 20px;"></div>
     </div>
@@ -160,10 +148,10 @@
             document.getElementById('labelTomorrow').innerText = `${a.getDate()}/${a.getMonth()+1}`;
         }
 
-        // --- LÓGICA DE BLOQUEIO DE HORÁRIOS ---
+        // --- LÓGICA DE BLOQUEIO (AGORA VAI FUNCIONAR!) ---
         async function mudarDia(dia) {
             diaSel = dia;
-            document.getElementById('btnToday').className = dia === 'hoje' ? 'date-btn selected' : 'date-btn';
+            document.getElementById('btnHoje').className = dia === 'hoje' ? 'date-btn selected' : 'date-btn';
             document.getElementById('btnTomorrow').className = dia === 'amanha' ? 'date-btn selected' : 'date-btn';
             horaSel = null;
             await gerarGrid();
@@ -177,13 +165,13 @@
             const horaAtual = agora.getHours();
             const dataStr = getDataFormatada(diaSel);
             
-            // 1. Busca Ocupados no Banco
+            // 1. LER BANCO DE DADOS (Agora funciona porque rodamos o SQL)
             let ocupados = [];
             if(supabase) {
                 try {
                     const { data } = await supabase.from('agendamentos_imperio')
                         .select('horario')
-                        .eq('data_escolhida', dataStr);
+                        .eq('data_escolhida', dataStr); // Filtra pela data
                     
                     if(data) ocupados = data.map(x => x.horario);
                 } catch(e) { console.log(e); }
@@ -191,13 +179,13 @@
 
             grid.innerHTML = '';
 
-            // Encaixe (Desativar se já passou das 18h de hoje)
+            // Botão Encaixe (Trava se já passou das 18h de hoje)
             let encaixeTravado = (diaSel === 'hoje' && horaAtual >= 18);
             let encaixeClass = encaixeTravado ? 'time-btn disabled' : 'time-btn';
             let encaixeClick = encaixeTravado ? '' : `onclick="selectHora(this, 'Encaixe')"`;
             grid.innerHTML += `<div class="${encaixeClass}" style="border-color:var(--gold); color:var(--gold);" ${encaixeClick}>ENCAIXE</div>`;
 
-            // Loop de Horas
+            // Loop das Horas
             let min = 8 * 60; // 08:00
             while(min < 18 * 60) {
                 const h = Math.floor(min/60);
@@ -207,19 +195,19 @@
                 let classe = 'time-btn';
                 let travado = false;
 
-                // A. Já passou da hora? (Só importa se for 'hoje')
+                // A. Já passou da hora? (Só se for hoje)
                 if (diaSel === 'hoje') {
                     if (h < horaAtual || (h === horaAtual && m < agora.getMinutes())) {
                         travado = true;
                     }
                 }
 
-                // B. Já tem gente? (Banco de Dados)
+                // B. Já tem gente? (Olha a lista do banco)
                 if (ocupados.includes(txt)) {
                     travado = true;
                     classe += ' occupied'; // Fica vermelho
                 } else if (travado) {
-                    classe += ' disabled'; // Fica cinza escuro
+                    classe += ' disabled'; // Fica cinza
                 }
 
                 const action = travado ? '' : `onclick="selectHora(this, '${txt}')"`;
@@ -252,18 +240,19 @@
             const servico = document.getElementById('servico').options[document.getElementById('servico').selectedIndex].text;
             const valor = document.getElementById('valorTotal').innerText;
             const dataStr = getDataFormatada(diaSel);
+            const pag = document.getElementById('pagamento').value;
 
-            // 1. Salva no Banco (Importante para bloquear para os outros)
+            // 1. Salva no Banco (Para bloquear para os outros)
             let idGerado = "OFF-" + Math.floor(Math.random()*1000);
             
             if(supabase) {
                 try {
-                    // Verifica de novo antes de salvar (Segurança Dupla)
+                    // Verificação final antes de salvar
                     if (horaSel !== 'Encaixe') {
                         const { data: jaTem } = await supabase.from('agendamentos_imperio').select('id').eq('data_escolhida', dataStr).eq('horario', horaSel);
                         if (jaTem && jaTem.length > 0) {
-                            alert('⚠️ Vaga preenchida agora mesmo! Escolha outro horário.');
-                            await gerarGrid(); // Atualiza a tela
+                            alert('⚠️ Vaga preenchida agora mesmo! Atualizando tela...');
+                            await gerarGrid(); 
                             btn.innerText = "CONFIRMAR"; btn.disabled = false;
                             return;
                         }
@@ -276,10 +265,10 @@
                         tamanho_carro: tamanho,
                         servico_nome: servico,
                         valor_cobrado: parseFloat(valor.replace('R$ ','').replace(',','.')),
-                        forma_pagamento: "Site"
+                        forma_pagamento: pag
                     }).select();
                     
-                    if(data && data[0]) idGerado = data[0].id.split('-')[0].toUpperCase();
+                    if(data && data[0]) idGerado = data[0].id.split('-')[0].toUpperCase().substring(0, 6);
                 } catch(e) {}
             }
 
@@ -300,13 +289,12 @@
         // --- EXTRAS ---
         function calcular() {
             const tam = document.getElementById('carSize').value;
-            const svc = document.getElementById('servico').value; // Agora pega do select direto
+            const svc = document.getElementById('servico').value;
             
-            // Mapeamento simples
             let svcKey = 'simples';
-            if (svc.includes('Ducha')) svcKey = 'ducha';
-            if (svc.includes('Cera')) svcKey = 'cera';
-            if (svc.includes('Higienização')) svcKey = 'higienizacao';
+            if (svc.includes('ducha')) svcKey = 'ducha';
+            if (svc.includes('cera')) svcKey = 'cera';
+            if (svc.includes('higienizacao')) svcKey = 'higienizacao';
 
             const val = precos[tam][svcKey] || 0;
             document.getElementById('valorTotal').innerText = `R$ ${val},00`;
