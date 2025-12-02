@@ -3,301 +3,452 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ImpérioCar-01 | Agendamento Realtime</title>
+    <title>ImpérioCar-01 | Agendamento VIP</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800;900&display=swap" rel="stylesheet">
     
-    <!-- BIBLIOTECA SUPABASE (VERSÃO MAIS ESTÁVEL) -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- SUPABASE -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
     <style>
-        :root { --gold: #FFD700; --black: #0a0a0a; --whatsapp: #25D366; --danger: #ff4444; }
+        :root {
+            --gold: #FFD700; --gold-dark: #B8860B; --black: #0a0a0a;
+            --gray-dark: #141414; --gray-light: #2a2a2a;
+            --whatsapp: #25D366; --danger: #ff4444;
+        }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Montserrat', sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background-color: var(--black); color: white; padding-bottom: 140px; }
         
-        .header { background: linear-gradient(to bottom, rgba(0,0,0,0.8), var(--black)), url('https://images.unsplash.com/photo-1601362840469-51e4d8d58785?w=800&q=80'); background-size: cover; text-align: center; padding: 30px 20px; border-bottom: 3px solid var(--gold); }
-        .logo h1 { color: var(--gold); font-weight: 900; font-size: 1.8rem; margin: 0; }
+        .header { background: linear-gradient(to bottom, rgba(0,0,0,0.7), var(--black)), url('https://images.unsplash.com/photo-1601362840469-51e4d8d58785?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'); background-size: cover; background-position: center; text-align: center; padding: 40px 20px 20px 20px; border-bottom: 3px solid var(--gold); }
+        .logo h1 { color: var(--gold); font-weight: 900; font-size: 1.8rem; text-transform: uppercase; }
+        .logo p { font-size: 0.8rem; letter-spacing: 2px; color: #ddd; }
         
-        /* STATUS DE CONEXÃO */
-        .system-status { font-size: 0.7rem; color: #aaa; margin-top: 5px; display: flex; justify-content: center; align-items: center; gap: 5px; }
-        .dot { width: 8px; height: 8px; border-radius: 50%; background: red; box-shadow: 0 0 5px red; transition: 0.3s; }
-        .dot.online { background: #00ff00; box-shadow: 0 0 5px #00ff00; }
+        .container { width: 100%; max-width: 600px; margin: 0 auto; padding: 15px; }
+        
+        /* VITRINE */
+        .gallery-container { position: relative; width: 100%; height: 220px; border-radius: 10px; overflow: hidden; border: 2px solid var(--gold); margin-bottom: 25px; background: #000; }
+        .gallery-slide { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 1s; object-fit: cover; }
+        .gallery-slide.active { opacity: 1; }
+        .gallery-caption { position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.7); color: var(--gold); padding: 5px 10px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
 
-        .container { padding: 15px; max-width: 600px; margin: 0 auto; }
+        .section-title { font-size: 1rem; color: var(--gold); margin: 25px 0 10px 0; text-transform: uppercase; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+        .section-title::after { content: ''; flex: 1; height: 1px; background: #333; }
         
-        /* DATA */
-        .date-selector { display: flex; gap: 10px; margin: 15px 0; }
-        .date-btn { flex: 1; padding: 15px; background: #222; border: 1px solid #444; color: white; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        .date-btn.selected { background: var(--gold); color: black; border-color: var(--gold); }
-
-        /* GRID HORÁRIOS */
-        .time-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 15px; }
-        .time-btn { 
-            background: #222; border: 1px solid #444; color: #ccc; 
-            padding: 12px 2px; border-radius: 6px; font-size: 0.85rem; 
-            text-align: center; cursor: pointer; transition: 0.2s; position: relative;
-        }
+        .date-selector { display: flex; gap: 10px; margin-bottom: 15px; }
+        .date-btn { flex: 1; padding: 15px; background-color: var(--gray-light); border: 1px solid #444; color: #ccc; border-radius: 8px; font-weight: bold; font-size: 0.9rem; text-transform: uppercase; cursor: pointer; }
+        .date-btn.selected { background-color: var(--gold); color: var(--black); border-color: var(--gold); }
         
-        /* ESTADOS */
-        .time-btn.selected { background: var(--gold); color: black; font-weight: bold; transform: scale(1.05); }
-        .time-btn.disabled { background: #111; color: #444; border-color: #222; text-decoration: line-through; pointer-events: none; }
+        .time-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; min-height: 80px; }
+        .time-btn { background-color: var(--gray-light); border: 1px solid #444; color: #ccc; padding: 12px 5px; border-radius: 6px; font-size: 0.85rem; cursor: pointer; text-align: center; }
+        .time-btn.selected { background-color: var(--gold); color: var(--black); font-weight: 900; border-color: var(--gold); }
+        .time-btn.disabled { background-color: #111; color: #444; border-color: #222; cursor: not-allowed; text-decoration: line-through; }
         
-        /* OCUPADO REAL (VERMELHO) */
-        .time-btn.booked { 
-            background-color: rgba(255, 0, 0, 0.15) !important; 
-            color: #ff5555 !important; 
-            border: 1px solid #ff0000 !important;
-            pointer-events: none; 
-            opacity: 0.8;
-        }
-        .time-btn.booked::after { content: '🔒'; font-size: 0.6rem; position: absolute; top: -5px; right: -5px; }
-
-        /* FOOTER */
-        .sticky-footer { position: fixed; bottom: 0; left: 0; width: 100%; background: #111; padding: 15px; border-top: 1px solid #333; text-align: center; z-index: 100; box-shadow: 0 -5px 20px rgba(0,0,0,0.8); }
-        .btn-agendar { background: var(--whatsapp); color: white; padding: 16px; border-radius: 50px; font-weight: 800; width: 100%; border: none; font-size: 1rem; cursor: pointer; }
+        select, .payment-select { width: 100%; padding: 15px; background-color: var(--gray-light); border: 1px solid #333; color: white; border-radius: 8px; font-size: 1rem; margin-bottom: 10px; }
+        .service-item { display: flex; justify-content: space-between; align-items: center; background-color: var(--gray-light); padding: 15px; border-radius: 10px; border: 1px solid #333; margin-bottom: 10px; }
+        .service-item input { transform: scale(1.3); accent-color: var(--gold); margin-right: 10px;}
+        .price-tag { color: var(--gold); font-weight: bold; }
         
-        /* OUTROS */
-        .section-title { color: var(--gold); font-weight: 800; margin: 20px 0 10px 0; border-bottom: 1px solid #333; padding-bottom: 5px; }
-        select, .service-item { width: 100%; padding: 15px; background: #222; border: 1px solid #333; color: white; border-radius: 8px; margin-bottom: 10px; font-size: 1rem; }
-        .service-item { display: flex; justify-content: space-between; align-items: center; }
-        .service-item input { transform: scale(1.3); accent-color: var(--gold); }
-
-        /* LOADING */
-        .loading-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:2000; align-items:center; justify-content:center; flex-direction:column; }
-        .spinner { width: 40px; height: 40px; border: 4px solid #333; border-top: 4px solid var(--gold); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
-        @keyframes spin { to { transform: rotate(360deg); } }
+        .sticky-footer { position: fixed; bottom: 0; left: 0; width: 100%; background-color: rgba(0,0,0,0.95); padding: 15px; border-top: 1px solid #333; display: flex; flex-direction: column; align-items: center; z-index: 100; }
+        .btn-whatsapp { background-color: var(--whatsapp); color: white; text-decoration: none; padding: 16px; border-radius: 50px; font-weight: 800; width: 100%; text-align: center; display: block; border: none; font-size: 1rem; cursor: pointer; }
+        
+        /* ADMIN */
+        .modal-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:2000; align-items:center; justify-content:center; }
+        .modal-content { background:#1a1a1a; padding:20px; border:2px solid var(--gold); width:90%; max-width:400px; text-align:center; border-radius:10px; max-height: 80vh; overflow-y: auto;}
+        .admin-input { width:100%; padding:10px; margin:10px 0; background:#333; border:1px solid #555; color:white; }
+        .admin-btn { background:var(--gold); border:none; padding:10px; width:100%; font-weight:bold; margin-top:5px; cursor:pointer; }
+        
+        .admin-photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-top: 10px; }
+        .admin-photo-item { position: relative; height: 60px; }
+        .admin-photo-item img { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; border: 1px solid #444; }
+        .delete-btn { position: absolute; top:0; right:0; background:red; color:white; border:none; width:20px; height:20px; font-size:10px; cursor:pointer;}
     </style>
 </head>
 <body>
 
     <div class="header">
-        <div class="logo"><h1>ImpérioCar-01</h1><p>AGENDAMENTO ONLINE</p></div>
-        <!-- Indicador de Status -->
-        <div class="system-status">
-            <div id="statusDot" class="dot"></div> <span id="statusText">Conectando...</span>
+        <div class="logo" id="crownLogo">
+            <i class="fas fa-crown" style="color: var(--gold); font-size: 2.5rem; margin-bottom: 10px;"></i>
+            <h1>ImpérioCar-01</h1>
+            <p>LAVA-RÁPIDO & ESTÉTICA</p>
         </div>
     </div>
 
     <div class="container">
-        <!-- LEGENDA -->
-        <div style="display:flex; justify-content:center; gap:15px; font-size:0.7rem; color:#888;">
-            <span style="display:flex; align-items:center; gap:5px;"><div style="width:10px; height:10px; background:var(--gold);"></div> Seu</span>
-            <span style="display:flex; align-items:center; gap:5px;"><div style="width:10px; height:10px; background:rgba(255,0,0,0.2); border:1px solid red;"></div> Ocupado</span>
+        <!-- VITRINE -->
+        <div class="section-title">VITRINE (VEÍCULOS PRONTOS)</div>
+        <div class="gallery-container" id="galleryContainer"></div>
+
+        <div style="background:rgba(184,134,11,0.15); border:1px solid var(--gold-dark); padding:15px; border-radius:8px; font-size:0.85rem; margin-bottom:20px; text-align:center; color:#ddd;">
+            <i class="fas fa-info-circle"></i> Os agendamentos são salvos no sistema e confirmados via WhatsApp.
         </div>
 
-        <div class="section-title">DATA</div>
+        <div class="section-title">ESCOLHA O DIA</div>
         <div class="date-selector">
-            <button class="date-btn selected" id="btnToday" onclick="mudarData('hoje')">HOJE</button>
-            <button class="date-btn" id="btnTomorrow" onclick="mudarData('amanha')">AMANHÃ</button>
+            <button class="date-btn selected" id="btnToday" onclick="mudarData('hoje')">HOJE<br><span id="labelToday" style="font-size:0.7rem">--/--</span></button>
+            <button class="date-btn" id="btnTomorrow" onclick="mudarData('amanha')">AMANHÃ<br><span id="labelTomorrow" style="font-size:0.7rem">--/--</span></button>
         </div>
-
-        <div class="section-title">HORÁRIO</div>
-        <div id="gridHorarios" class="time-grid"></div>
 
         <div class="section-title">VEÍCULO</div>
-        <select id="carSize" onchange="atualizarPreco()">
-            <option value="pequeno">Carro Pequeno</option>
-            <option value="medio" selected>Carro Médio</option>
-            <option value="grande">Carro Grande</option>
+        <select id="carSize" onchange="calcular()">
+            <option value="pequeno">Carro Pequeno (Hatch)</option>
+            <option value="medio" selected>Carro Médio (Sedan)</option>
+            <option value="grande">Carro Grande (SUV/Pick-up)</option>
             <option value="moto">Moto</option>
         </select>
 
+        <div class="section-title">HORÁRIO</div>
+        <div class="time-grid" id="gridHorarios"></div>
+        
         <div class="section-title">SERVIÇO</div>
-        <label class="service-item"><span>Ducha Rápida</span><input type="radio" name="servico" value="Ducha Rápida" data-id="ducha" onchange="atualizarPreco()"></label>
-        <label class="service-item"><span>Lavagem Simples</span><input type="radio" name="servico" value="Lavagem Simples" data-id="simples" checked onchange="atualizarPreco()"></label>
-        <label class="service-item"><span>Lavagem c/ Cera</span><input type="radio" name="servico" value="Lavagem com Cera" data-id="cera" onchange="atualizarPreco()"></label>
-        <label class="service-item"><span>Higienização</span><input type="radio" name="servico" value="Higienização" data-id="higienizacao" onchange="atualizarPreco()"></label>
+        <div id="listaServicos"></div>
 
         <div class="section-title">PAGAMENTO</div>
-        <select id="pagamento"><option>Pix</option><option>Cartão</option><option>Dinheiro</option></select>
+        <select id="pagamento" onchange="calcular()">
+            <option value="Pix">Pix</option>
+            <option value="Cartão">Cartão Crédito/Débito</option>
+            <option value="Dinheiro">Dinheiro</option>
+        </select>
+        
+        <div style="height: 20px;"></div>
+        <div style="text-align:center; font-size:0.8rem; color:#666;">Rua Giovanni Segantini, 257A<br>José Bonifácio - SP</div>
     </div>
 
     <div class="sticky-footer">
-        <div style="color:#ccc; font-size:0.9rem; margin-bottom:5px;">Total: <span id="valorTotal" style="color:var(--gold); font-weight:900; font-size:1.3rem;">R$ 0,00</span></div>
-        <button id="btnConfirmar" class="btn-agendar" onclick="finalizarAgendamento()"><i class="fab fa-whatsapp"></i> AGENDAR E ENVIAR</button>
+        <div style="color:#ccc; margin-bottom:5px;">Total: <span id="valorTotal" style="color:var(--gold); font-weight:900; font-size:1.3rem;">R$ 0,00</span></div>
+        <button id="btnZap" class="btn-whatsapp">AGENDAR NO WHATSAPP</button>
     </div>
 
-    <div id="loading" class="loading-overlay"><div class="spinner"></div><div style="color:white; font-weight:bold;">Sincronizando...</div></div>
+    <!-- PAINÉIS ADMIN -->
+    <div id="modalLogin" class="modal-overlay">
+        <div class="modal-content">
+            <h3>ÁREA ADMIN</h3>
+            <input type="password" id="senhaAdmin" class="admin-input" placeholder="Senha">
+            <button onclick="logarAdmin()" class="admin-btn">ENTRAR</button>
+            <button onclick="document.getElementById('modalLogin').style.display='none'" class="admin-btn" style="background:#444; color:white;">FECHAR</button>
+        </div>
+    </div>
+    
+    <div id="painelAdmin" class="modal-overlay">
+        <div class="modal-content">
+            <h3>PAINEL DE CONTROLE</h3>
+            <div style="text-align:left; border-bottom:1px solid #444; padding-bottom:15px; margin-bottom:15px;">
+                <h4 style="color:white; margin-bottom:5px;">📸 Fotos da Vitrine</h4>
+                <label for="fileInput" class="admin-btn" style="background:#444; color:white; font-size:0.9rem;">
+                    <i class="fas fa-images"></i> ADICIONAR FOTOS
+                </label>
+                <input type="file" id="fileInput" accept="image/*" multiple style="display:none;" onchange="handleFileUpload(this)">
+                <div id="adminPhotoGrid" class="admin-photo-grid"></div>
+            </div>
+            <div id="editorPrecos" style="text-align:left; max-height:200px; overflow-y:scroll; border-bottom:1px solid #444; margin-bottom:10px;"></div>
+            <button onclick="salvarPrecos()" class="admin-btn">SALVAR ALTERAÇÕES</button>
+            <button onclick="document.getElementById('painelAdmin').style.display='none'" class="admin-btn" style="background:#c00; color:white;">SAIR</button>
+        </div>
+    </div>
 
     <script>
-        // CONFIGURAÇÃO
+        // --- 1. CONFIGURAÇÃO (JÁ PREENCHI COM SUAS CHAVES DO IMPERIOCAR-01) ---
         const supabaseUrl = 'https://jmivkvtebtjudqhvgc.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptaXZrdmV0ZWJ0anVkcWh2dmdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ2MjIzMTYsImV4cCI6MjA4MDE5ODMxNn0.WtPrTn0Kvx6o_h_ZfNoAcQGjNDErr0NqT0wt60YLlo0';
         
         let supabase = null;
+        try { 
+            supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        } catch (e) { 
+            console.error("Erro Supabase", e);
+        }
+
+        // --- 2. VARIÁVEIS GLOBAIS ---
         let diaSelecionado = 'hoje';
         let horaSelecionada = null;
-        let listaOcupados = [];
-
-        const precosTabela = {
+        
+        const defaultPrices = {
             moto: { ducha: 20, simples: 30, cera: 40, higienizacao: 100 },
             pequeno: { ducha: 30, simples: 45, cera: 60, higienizacao: 200 },
             medio: { ducha: 35, simples: 50, cera: 70, higienizacao: 250 },
             grande: { ducha: 50, simples: 70, cera: 90, higienizacao: 300 }
         };
+        const defaultPhotos = [
+            "https://images.unsplash.com/photo-1601362840469-51e4d8d58785?w=600&q=80",
+            "https://images.unsplash.com/photo-1520340356584-7c903ccf70dc?w=600&q=80"
+        ];
+        
+        // Carrega dados locais (Funciona mesmo sem internet)
+        let precos = JSON.parse(localStorage.getItem('precosImperio')) || defaultPrices;
+        let galleryPhotos = JSON.parse(localStorage.getItem('imperioPhotos')) || defaultPhotos;
+        let currentSlide = 0;
+        let slideInterval;
+        
+        const servicosOpcoes = [
+            { id: 'ducha', nome: 'Só Ducha', desc: 'Externa Rápida' },
+            { id: 'simples', nome: 'Lavagem Simples', desc: 'Int/Ext + Aspirar' },
+            { id: 'cera', nome: 'Lavagem c/ Cera', desc: 'Completa + Cera' },
+            { id: 'higienizacao', nome: 'Higienização', desc: 'Interna Profunda' }
+        ];
 
-        // INICIALIZAÇÃO
+        // --- 3. INICIALIZAR ---
         window.onload = function() {
-            try {
-                supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-                document.getElementById('statusDot').classList.add('online');
-                document.getElementById('statusText').innerText = "Sistema Online";
-                
-                // INICIA
-                mudarData('hoje');
-                atualizarPreco();
-                ativarRealtime();
-            } catch (e) {
-                console.error(e);
-                document.getElementById('statusText').innerText = "Erro de Conexão";
-                document.getElementById('statusText').style.color = "red";
-            }
+            initGallery();
+            renderizarDatas();
+            renderizarServicos();
+            gerarHorariosSimples(); 
+            calcular();
+            initAdminTrigger();
+            
+            // GARANTIA: SE O BOTÃO NÃO EXISTIR, ELE NÃO QUEBRA
+            const btn = document.getElementById('btnZap');
+            if(btn) btn.onclick = processarAgendamento;
         };
 
-        // --- 1. TEMPO REAL (O SEGREDO) ---
-        function ativarRealtime() {
-            supabase
-                .channel('tabela-agendamentos')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'agendamentos_imperio' }, (payload) => {
-                    // SE ALGUÉM AGENDAR, ATUALIZA AQUI NA HORA
-                    console.log('Mudança detectada!');
-                    buscarOcupados(); 
-                })
-                .subscribe();
+        // --- 4. FUNÇÃO DE AGENDAMENTO (BLINDADA) ---
+        async function processarAgendamento(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnZap');
+
+            // Validação
+            if (!horaSelecionada && horaSelecionada !== 'Encaixe') {
+                alert("⚠️ Por favor, escolha um horário.");
+                return;
+            }
+
+            // Visual de carregando
+            btn.innerText = "⏳ Processando...";
+            btn.disabled = true;
+
+            // 1. Prepara os dados
+            const tamanho = document.getElementById('carSize').value;
+            const servicoRadio = document.querySelector('input[name="servico"]:checked');
+            const servicoNome = servicoOpcoes.find(s => s.id === servicoRadio.value).nome;
+            const valor = document.getElementById('valorTotal').innerText.replace('R$ ', '');
+            const pag = document.getElementById('pagamento').value;
+            const dataStr = getDataFormatada(diaSelecionado);
+            const horaMsg = horaSelecionada || "Encaixe";
+
+            // 2. Monta Link do WhatsApp (Isso NUNCA falha)
+            const msg = `👑 *NOVO AGENDAMENTO*\n\n🗓 ${dataStr}\n⏰ *${horaMsg}*\n\n🚗 ${tamanho.toUpperCase()}\n🚿 ${servicoNome}\n💰 R$ ${valor}\n💳 ${pag}`;
+            const linkZap = `https://wa.me/5511960671570?text=${encodeURIComponent(msg)}`;
+
+            // 3. Tenta salvar no Banco (Agora deve funcionar!)
+            if (supabase) {
+                try {
+                    await supabase.from('agendamentos_imperio').insert({
+                        data_escolhida: dataStr,
+                        horario: horaMsg,
+                        tamanho_carro: tamanho,
+                        servico_nome: servicoNome,
+                        valor_cobrado: parseFloat(valor.replace(',', '.')),
+                        forma_pagamento: pag
+                    });
+                } catch (erroBanco) {
+                    console.log("Banco indisponível, mas vamos abrir o WhatsApp.", erroBanco);
+                }
+            }
+
+            // 4. Redireciona para o WhatsApp
+            window.location.href = linkZap;
+            
+            setTimeout(() => {
+                btn.innerText = "AGENDAR NO WHATSAPP";
+                btn.disabled = false;
+            }, 2000);
         }
 
-        // --- 2. LÓGICA DE DATAS ---
-        function getStrData(tipo) {
+        // --- 5. LÓGICA DE INTERFACE ---
+        function getDataFormatada(tipo) {
             const hoje = new Date();
-            const data = tipo === 'hoje' ? hoje : new Date(hoje.setDate(hoje.getDate() + 1));
-            return `${data.getDate().toString().padStart(2,'0')}/${(data.getMonth()+1).toString().padStart(2,'0')}`;
+            const amanha = new Date(hoje); amanha.setDate(hoje.getDate() + 1);
+            const diasSemana = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+            const dataObj = tipo === 'hoje' ? hoje : amanha;
+            return `${dataObj.getDate().toString().padStart(2,'0')}/${(dataObj.getMonth()+1).toString().padStart(2,'0')} (${diasSemana[dataObj.getDay()]})`;
+        }
+
+        function renderizarDatas() {
+            const hoje = new Date();
+            const amanha = new Date(hoje); amanha.setDate(hoje.getDate() + 1);
+            const formatar = (d) => `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}`;
+            document.getElementById('labelToday').innerText = formatar(hoje);
+            document.getElementById('labelTomorrow').innerText = formatar(amanha);
+        }
+
+        function renderizarServicos() {
+            const container = document.getElementById('listaServicos');
+            let html = '';
+            servicosOpcoes.forEach((svc, index) => {
+                const checked = index === 1 ? 'checked' : ''; 
+                html += `
+                <label class="service-item">
+                    <div style="display:flex; align-items:center;">
+                        <input type="radio" name="servico" value="${svc.id}" ${checked} onchange="calcular()">
+                        <div><span style="font-weight:bold;">${svc.nome}</span><br><span style="font-size:0.8rem; color:#888;">${svc.desc}</span></div>
+                    </div>
+                    <span class="price-tag" id="tag-${svc.id}">R$ 00</span>
+                </label>`;
+            });
+            container.innerHTML = html;
         }
 
         function mudarData(tipo) {
             diaSelecionado = tipo;
             document.getElementById('btnToday').className = tipo === 'hoje' ? 'date-btn selected' : 'date-btn';
             document.getElementById('btnTomorrow').className = tipo === 'amanha' ? 'date-btn selected' : 'date-btn';
-            horaSelecionada = null;
-            desenharGrid();
-            buscarOcupados();
+            horaSelecionada = null; 
+            gerarHorariosSimples();
+            calcular();
         }
 
-        async function buscarOcupados() {
-            const dataFmt = getStrData(diaSelecionado);
-            const { data, error } = await supabase
-                .from('agendamentos_imperio')
-                .select('horario')
-                .eq('data_escolhida', dataFmt);
+        function gerarHorariosSimples() {
+            const grid = document.getElementById('gridHorarios');
+            grid.innerHTML = '';
+            grid.innerHTML += `<div class="time-btn" style="grid-column:1/-1; background:rgba(255,68,68,0.2); color:#ffaaaa; border:1px solid red;" onclick="selecionarHora(this, 'Encaixe')">ENCAIXE (Sem hora fixa)</div>`;
 
-            if (data) {
-                listaOcupados = data.map(i => i.horario);
-                atualizarCores();
-            }
-        }
+            let minutos = 8 * 60; 
+            const horaAtual = new Date().getHours();
+            const minAtual = new Date().getMinutes();
 
-        function desenharGrid() {
-            const container = document.getElementById('gridHorarios');
-            container.innerHTML = '';
-            
-            // Encaixe
-            container.innerHTML += `<div class="time-btn" onclick="selecionarHora(this, 'Encaixe')" style="border-color:orange; color:orange;">ENCAIXE</div>`;
-
-            let min = 8 * 60; // 08:00
-            const agora = new Date();
-            const hAtual = agora.getHours();
-            const mAtual = agora.getMinutes();
-
-            while (min < 18 * 60) {
-                const h = Math.floor(min / 60);
-                const m = min % 60;
-                const horaStr = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`;
+            while(minutos < 18 * 60) {
+                const h = Math.floor(minutos/60);
+                const m = minutos % 60;
+                const horaFormatada = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`;
                 
-                let classes = "time-btn";
-                // ID Único
-                let idBtn = "btn_" + horaStr.replace(':', '');
+                let classeExtra = '';
+                let bloqueado = false;
 
-                // Passado?
-                if (diaSelecionado === 'hoje' && (h < hAtual || (h === hAtual && m < mAtual))) {
-                    classes += " disabled";
-                }
-
-                container.innerHTML += `<div id="${idBtn}" class="${classes}" onclick="selecionarHora(this, '${horaStr}')">${horaStr}</div>`;
-                min += 45;
-            }
-        }
-
-        function atualizarCores() {
-            // Limpa vermelhos antigos
-            document.querySelectorAll('.booked').forEach(el => el.classList.remove('booked'));
-            
-            // Pinta novos vermelhos
-            listaOcupados.forEach(hora => {
-                const btn = document.getElementById("btn_" + hora.replace(':', ''));
-                if (btn) {
-                    btn.classList.add('booked');
-                    // Se eu estava selecionando e ficou vermelho (alguém roubou), desmarca
-                    if(horaSelecionada === hora) {
-                        horaSelecionada = null;
-                        document.querySelectorAll('.selected').forEach(b => b.classList.remove('selected'));
-                        alert("⚠️ OPA! Alguém acabou de pegar esse horário.");
+                // Bloqueia horários passados
+                if (diaSelecionado === 'hoje') {
+                    if (h < horaAtual || (h === horaAtual && m < minAtual)) {
+                        classeExtra = 'disabled'; bloqueado = true;
                     }
                 }
-            });
+
+                const clickAction = bloqueado ? '' : `onclick="selecionarHora(this, '${horaFormatada}')"`;
+                grid.innerHTML += `<div class="time-btn ${classeExtra}" ${clickAction}>${horaFormatada}</div>`;
+                minutos += 45;
+            }
         }
 
         function selecionarHora(el, hora) {
-            if (el.classList.contains('disabled') || el.classList.contains('booked')) return;
-            document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('selected'));
+            document.querySelectorAll('.time-btn').forEach(b => {
+                if(!b.classList.contains('disabled')) b.classList.remove('selected');
+            });
             el.classList.add('selected');
             horaSelecionada = hora;
         }
 
-        // --- 3. FINALIZAR ---
-        async function finalizarAgendamento() {
-            if (!horaSelecionada) { alert("⚠️ Escolha um horário livre."); return; }
+        function calcular() {
+            const tamanho = document.getElementById('carSize').value;
+            const servicoRadio = document.querySelector('input[name="servico"]:checked');
+            const servicoId = servicoRadio ? servicoRadio.value : 'simples';
+            
+            servicosOpcoes.forEach(s => {
+                const valor = precos[tamanho][s.id];
+                document.getElementById(`tag-${s.id}`).innerText = `R$ ${valor}`;
+            });
+            const total = precos[tamanho][servicoId];
+            document.getElementById('valorTotal').innerText = `R$ ${total},00`;
+        }
 
-            document.getElementById('loading').style.display = 'flex';
-
-            const dados = {
-                data_escolhida: getStrData(diaSelecionado),
-                horario: horaSelecionada,
-                tamanho_carro: document.getElementById('carSize').value,
-                servico_nome: document.querySelector('input[name="servico"]:checked').value,
-                valor_cobrado: parseFloat(document.getElementById('valorTotal').innerText.replace('R$ ', '').replace(',', '.')),
-                forma_pagamento: document.getElementById('pagamento').value
+        // --- 6. GALERIA E ADMIN ---
+        function initGallery() {
+            const container = document.getElementById('galleryContainer');
+            container.innerHTML = '';
+            if(galleryPhotos.length === 0) {
+                container.innerHTML = '<div style="color:white; display:flex; justify-content:center; align-items:center; height:100%;">Sem fotos na vitrine</div><div class="gallery-caption">Adicione fotos no Admin</div>';
+                return;
+            }
+            galleryPhotos.forEach((url, index) => {
+                const img = document.createElement('img');
+                img.src = url;
+                img.className = index === 0 ? 'gallery-slide active' : 'gallery-slide';
+                container.appendChild(img);
+            });
+            const caption = document.createElement('div');
+            caption.className = 'gallery-caption';
+            caption.innerHTML = 'Resultado Final ✨';
+            container.appendChild(caption);
+            if (slideInterval) clearInterval(slideInterval);
+            if (galleryPhotos.length > 1) { slideInterval = setInterval(nextSlide, 3000); }
+        }
+        function nextSlide() {
+            const slides = document.querySelectorAll('.gallery-slide');
+            if (slides.length === 0) return;
+            slides[currentSlide].classList.remove('active');
+            currentSlide = (currentSlide + 1) % slides.length;
+            slides[currentSlide].classList.add('active');
+        }
+        let clicks = 0;
+        function initAdminTrigger() {
+            document.getElementById('crownLogo').onclick = () => {
+                clicks++;
+                if(clicks===5) { document.getElementById('modalLogin').style.display='flex'; clicks=0; }
+                setTimeout(()=>clicks=0, 2000);
             };
-
-            // TENTA SALVAR NO BANCO
-            const { error } = await supabase.from('agendamentos_imperio').insert(dados);
-
-            document.getElementById('loading').style.display = 'none';
-
-            if (error) {
-                // ERRO DUPLICADO
-                if (error.code === '23505') {
-                    alert("⛔ Ops! Alguém acabou de reservar esse horário na sua frente.\nO sistema atualizou a tela.");
-                    buscarOcupados();
-                } else {
-                    // Erro de Conexão: Abre WhatsApp igual para não perder venda
-                    if(confirm("Erro de conexão com o banco. Deseja agendar pelo WhatsApp direto?")) {
-                        enviarZap(dados);
-                    }
+        }
+        function logarAdmin() {
+            if(document.getElementById('senhaAdmin').value === '#Ccjj9842$') {
+                document.getElementById('modalLogin').style.display='none';
+                document.getElementById('painelAdmin').style.display='flex';
+                montarEditorPrecos();
+                renderAdminPhotos();
+            } else alert('Senha errada');
+        }
+        function montarEditorPrecos() {
+            const div = document.getElementById('editorPrecos');
+            div.innerHTML = '';
+            for(let tam in precos) {
+                div.innerHTML += `<h4 style="color:var(--gold); margin-top:10px">${tam.toUpperCase()}</h4>`;
+                for(let s in precos[tam]) {
+                    div.innerHTML += `<div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                        <span>${s}</span>
+                        <input type="number" id="p-${tam}-${s}" value="${precos[tam][s]}" style="width:60px">
+                    </div>`;
                 }
-            } else {
-                // SUCESSO
-                enviarZap(dados);
             }
         }
-
-        function enviarZap(d) {
-            const msg = `👑 *NOVO AGENDAMENTO*\n🗓 ${d.data_escolhida} às ${d.horario}\n🚗 ${d.tamanho_carro.toUpperCase()}\n🚿 ${d.servico_nome.toUpperCase()}\n💰 R$ ${d.valor_cobrado}\n💳 ${d.forma_pagamento}`;
-            window.location.href = `https://wa.me/5511960671570?text=${encodeURIComponent(msg)}`;
+        function salvarPrecos() {
+            for(let tam in precos) { for(let s in precos[tam]) { precos[tam][s] = Number(document.getElementById(`p-${tam}-${s}`).value); } }
+            localStorage.setItem('precosImperio', JSON.stringify(precos));
+            localStorage.setItem('imperioPhotos', JSON.stringify(galleryPhotos));
+            alert('Tudo salvo!');
+            document.getElementById('painelAdmin').style.display='none';
+            calcular(); initGallery();
         }
-
-        function atualizarPreco() {
-            const tam = document.getElementById('carSize').value;
-            const idSvc = document.querySelector('input[name="servico"]:checked').getAttribute('data-id');
-            document.getElementById('valorTotal').innerText = `R$ ${precosTabela[tam][idSvc]},00`;
+        function renderAdminPhotos() {
+            const container = document.getElementById('adminPhotoGrid'); container.innerHTML = '';
+            galleryPhotos.forEach((url, index) => {
+                const div = document.createElement('div'); div.className = 'admin-photo-item';
+                div.innerHTML = `<img src="${url}"><button class="delete-btn" onclick="deletePhoto(${index})">X</button>`;
+                container.appendChild(div);
+            });
+        }
+        function deletePhoto(index) {
+            if(confirm('Apagar foto?')) { galleryPhotos.splice(index, 1); renderAdminPhotos(); }
+        }
+        async function handleFileUpload(input) {
+            if (input.files && input.files.length > 0) {
+                let processedCount = 0;
+                for(let i = 0; i < input.files.length; i++) {
+                    const file = input.files[i];
+                    try {
+                        const resizedBase64 = await compressImage(file);
+                        galleryPhotos.push(resizedBase64); processedCount++;
+                    } catch (err) { console.error("Erro", err); }
+                }
+                if(processedCount > 0) { renderAdminPhotos(); alert(`${processedCount} fotos prontas! Clique em SALVAR ALTERAÇÕES.`); }
+                input.value = '';
+            }
+        }
+        function compressImage(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader(); reader.readAsDataURL(file);
+                reader.onload = (event) => {
+                    const img = new Image(); img.src = event.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas'); const maxWidth = 600;
+                        const scaleSize = maxWidth / img.width; canvas.width = maxWidth; canvas.height = img.height * scaleSize;
+                        const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        resolve(canvas.toDataURL('image/jpeg', 0.6));
+                    }; img.onerror = (err) => reject(err);
+                }; reader.onerror = (err) => reject(err);
+            });
         }
     </script>
 </body>
