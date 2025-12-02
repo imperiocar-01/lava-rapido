@@ -11,18 +11,21 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
-        :root {
-            --gold: #FFD700; --black: #0a0a0a; --whatsapp: #25D366; --danger: #ff4444;
-        }
+        :root { --gold: #FFD700; --black: #0a0a0a; --whatsapp: #25D366; --danger: #ff4444; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Montserrat', sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background-color: var(--black); color: white; padding-bottom: 140px; }
         
-        .header { background: linear-gradient(to bottom, rgba(0,0,0,0.8), var(--black)), url('https://images.unsplash.com/photo-1601362840469-51e4d8d58785?w=800&q=80'); background-size: cover; text-align: center; padding: 40px 20px; border-bottom: 3px solid var(--gold); }
+        .header { background: linear-gradient(to bottom, rgba(0,0,0,0.8), var(--black)), url('https://images.unsplash.com/photo-1601362840469-51e4d8d58785?w=800&q=80'); background-size: cover; text-align: center; padding: 30px 20px; border-bottom: 3px solid var(--gold); }
         .logo h1 { color: var(--gold); font-weight: 900; font-size: 1.8rem; margin: 0; }
         
         .container { padding: 15px; max-width: 600px; margin: 0 auto; }
         
-        /* GRID DE HORÁRIOS */
+        /* DATA */
+        .date-selector { display: flex; gap: 10px; margin: 15px 0; }
+        .date-btn { flex: 1; padding: 15px; background: #222; border: 1px solid #444; color: white; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .date-btn.selected { background: var(--gold); color: black; border-color: var(--gold); }
+
+        /* GRID HORÁRIOS */
         .time-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 15px; }
         .time-btn { 
             background: #222; border: 1px solid #444; color: #ccc; 
@@ -30,58 +33,47 @@
             text-align: center; cursor: pointer; transition: 0.2s; position: relative;
         }
         
-        /* OCUPADO (VERMELHO) */
+        /* ESTADOS */
+        .time-btn.selected { background: var(--gold); color: black; font-weight: bold; transform: scale(1.05); }
+        .time-btn.disabled { background: #111; color: #444; border-color: #222; text-decoration: line-through; pointer-events: none; }
+        
+        /* TRAVA VERMELHA (OCUPADO) */
         .time-btn.booked { 
-            background-color: rgba(255, 0, 0, 0.2) !important; 
+            background-color: rgba(255, 0, 0, 0.15) !important; 
             color: #ff5555 !important; 
             border: 1px solid #ff0000 !important;
-            pointer-events: none; /* Bloqueia clique */
-            opacity: 0.7;
+            pointer-events: none; 
+            opacity: 0.6;
         }
-        .time-btn.booked::after { content: '🔒'; font-size: 0.6rem; position: absolute; top: 2px; right: 2px; }
+        .time-btn.booked::after { content: '❌'; font-size: 0.6rem; position: absolute; top: -5px; right: -5px; }
 
-        /* SELECIONADO */
-        .time-btn.selected { background: var(--gold); color: black; font-weight: bold; border-color: var(--gold); transform: scale(1.05); z-index: 10; }
-        
-        /* PASSADO */
-        .time-btn.disabled { background: #111; color: #333; border-color: #222; text-decoration: line-through; pointer-events: none; }
+        /* RODAPÉ */
+        .sticky-footer { position: fixed; bottom: 0; left: 0; width: 100%; background: #111; padding: 15px; border-top: 1px solid #333; text-align: center; z-index: 100; box-shadow: 0 -5px 20px rgba(0,0,0,0.8); }
+        .btn-agendar { background: var(--whatsapp); color: white; padding: 16px; border-radius: 50px; font-weight: 800; width: 100%; border: none; font-size: 1rem; cursor: pointer; }
+        .btn-agendar:disabled { background: #444; cursor: wait; }
 
-        .section-title { color: var(--gold); font-weight: 800; margin: 25px 0 10px 0; border-bottom: 1px solid #333; padding-bottom: 5px; }
-        .date-selector { display: flex; gap: 10px; }
-        .date-btn { flex: 1; padding: 15px; background: #222; border: 1px solid #444; color: white; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        .date-btn.selected { background: var(--gold); color: black; border-color: var(--gold); }
-        
+        /* OUTROS */
+        .section-title { color: var(--gold); font-weight: 800; margin: 20px 0 10px 0; border-bottom: 1px solid #333; padding-bottom: 5px; }
         select, .service-item { width: 100%; padding: 15px; background: #222; border: 1px solid #333; color: white; border-radius: 8px; margin-bottom: 10px; font-size: 1rem; }
         .service-item { display: flex; justify-content: space-between; align-items: center; }
         .service-item input { transform: scale(1.3); accent-color: var(--gold); }
-        
-        .sticky-footer { position: fixed; bottom: 0; left: 0; width: 100%; background: #111; padding: 15px; border-top: 1px solid #333; text-align: center; z-index: 100; box-shadow: 0 -5px 15px rgba(0,0,0,0.5); }
-        .btn-agendar { background: var(--whatsapp); color: white; padding: 16px; border-radius: 50px; font-weight: 800; width: 100%; border: none; font-size: 1rem; cursor: pointer; display: flex; justify-content: center; gap: 10px; }
-        .btn-agendar:disabled { background: #444; cursor: not-allowed; }
 
-        /* MODAL LOADING */
-        .loading-modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:3000; align-items:center; justify-content:center; flex-direction: column; }
+        /* LOADING */
+        .loading-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:2000; align-items:center; justify-content:center; flex-direction:column; }
         .spinner { width: 40px; height: 40px; border: 4px solid #333; border-top: 4px solid var(--gold); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        
-        /* MODAL SUCESSO */
-        .success-modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:3000; align-items:center; justify-content:center; }
-        .success-box { background: #222; padding: 30px; border-radius: 15px; border: 2px solid var(--gold); text-align: center; width: 90%; max-width: 400px; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <div class="logo">
-            <h1>ImpérioCar-01</h1>
-            <p>AGENDAMENTO EM TEMPO REAL</p>
-        </div>
+        <div class="logo"><h1>ImpérioCar-01</h1><p>AGENDAMENTO EM TEMPO REAL</p></div>
     </div>
 
     <div class="container">
         <!-- LEGENDA -->
-        <div style="display:flex; justify-content:center; gap:15px; font-size:0.7rem; color:#888; margin-bottom:10px;">
-            <span style="display:flex; align-items:center; gap:5px;"><div style="width:10px; height:10px; background:var(--gold);"></div> Selecionado</span>
+        <div style="display:flex; justify-content:center; gap:15px; font-size:0.7rem; color:#888;">
+            <span style="display:flex; align-items:center; gap:5px;"><div style="width:10px; height:10px; background:var(--gold);"></div> Seu</span>
             <span style="display:flex; align-items:center; gap:5px;"><div style="width:10px; height:10px; background:rgba(255,0,0,0.2); border:1px solid red;"></div> Ocupado</span>
         </div>
 
@@ -91,6 +83,9 @@
             <button class="date-btn" id="btnTomorrow" onclick="mudarData('amanha')">AMANHÃ</button>
         </div>
 
+        <div class="section-title">HORÁRIO <span id="syncStatus" style="font-size:0.6rem; color:#4CAF50; display:none;">• Atualizado</span></div>
+        <div id="gridHorarios" class="time-grid"></div>
+
         <div class="section-title">VEÍCULO</div>
         <select id="carSize" onchange="atualizarPreco()">
             <option value="pequeno">Carro Pequeno</option>
@@ -99,71 +94,32 @@
             <option value="moto">Moto</option>
         </select>
 
-        <div class="section-title">HORÁRIO <span id="statusRealtime" style="font-size:0.6rem; color:#4CAF50; display:none;">• Atualizado</span></div>
-        <div id="gridHorarios" class="time-grid"></div>
-
         <div class="section-title">SERVIÇO</div>
-        <label class="service-item">
-            <span>Ducha Rápida</span>
-            <input type="radio" name="servico" value="Ducha Rápida" data-id="ducha" onchange="atualizarPreco()">
-        </label>
-        <label class="service-item">
-            <span>Lavagem Simples</span>
-            <input type="radio" name="servico" value="Lavagem Simples" data-id="simples" checked onchange="atualizarPreco()">
-        </label>
-        <label class="service-item">
-            <span>Lavagem c/ Cera</span>
-            <input type="radio" name="servico" value="Lavagem com Cera" data-id="cera" onchange="atualizarPreco()">
-        </label>
-        <label class="service-item">
-            <span>Higienização</span>
-            <input type="radio" name="servico" value="Higienização" data-id="higienizacao" onchange="atualizarPreco()">
-        </label>
+        <label class="service-item"><span>Ducha Rápida</span><input type="radio" name="servico" value="Ducha Rápida" data-id="ducha" onchange="atualizarPreco()"></label>
+        <label class="service-item"><span>Lavagem Simples</span><input type="radio" name="servico" value="Lavagem Simples" data-id="simples" checked onchange="atualizarPreco()"></label>
+        <label class="service-item"><span>Lavagem c/ Cera</span><input type="radio" name="servico" value="Lavagem com Cera" data-id="cera" onchange="atualizarPreco()"></label>
+        <label class="service-item"><span>Higienização</span><input type="radio" name="servico" value="Higienização" data-id="higienizacao" onchange="atualizarPreco()"></label>
 
         <div class="section-title">PAGAMENTO</div>
-        <select id="pagamento">
-            <option value="Pix">Pix</option>
-            <option value="Cartão">Cartão</option>
-            <option value="Dinheiro">Dinheiro</option>
-        </select>
+        <select id="pagamento"><option>Pix</option><option>Cartão</option><option>Dinheiro</option></select>
     </div>
 
     <div class="sticky-footer">
         <div style="color:#ccc; font-size:0.9rem; margin-bottom:5px;">Total: <span id="valorTotal" style="color:var(--gold); font-weight:900; font-size:1.3rem;">R$ 0,00</span></div>
-        <button id="btnConfirmar" class="btn-agendar" onclick="finalizarAgendamento()">
-            <i class="fab fa-whatsapp"></i> AGENDAR E ENVIAR
-        </button>
+        <button id="btnConfirmar" class="btn-agendar" onclick="finalizarAgendamento()"><i class="fab fa-whatsapp"></i> CONFIRMAR E ENVIAR</button>
     </div>
 
-    <!-- LOADING -->
-    <div id="loading" class="loading-modal">
-        <div class="spinner"></div>
-        <div style="color:white; font-weight:bold;">Reservando horário...</div>
-    </div>
-
-    <!-- SUCESSO -->
-    <div id="sucessoModal" class="success-modal">
-        <div class="success-box">
-            <i class="fas fa-check-circle" style="color:#4CAF50; font-size:3rem; margin-bottom:15px;"></i>
-            <h2 style="color:var(--gold); margin:0 0 10px 0;">AGENDADO!</h2>
-            <p style="color:#ccc; font-size:0.9rem;">O horário foi bloqueado para você.</p>
-            <button onclick="irParaWhatsApp()" class="btn-agendar" style="margin-top:20px;">
-                ENVIAR COMPROVANTE <i class="fas fa-arrow-right"></i>
-            </button>
-        </div>
-    </div>
+    <div id="loading" class="loading-overlay"><div class="spinner"></div><div style="color:white; font-weight:bold;">Reservando vaga...</div></div>
 
     <script>
-        // --- 1. CONFIGURAÇÃO ---
+        // CONFIGURAÇÃO
         const supabaseUrl = 'https://jmivkvtebtjudqhvgc.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptaXZrdmV0ZWJ0anVkcWh2dmdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ2MjIzMTYsImV4cCI6MjA4MDE5ODMxNn0.WtPrTn0Kvx6o_h_ZfNoAcQGjNDErr0NqT0wt60YLlo0';
         const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
-        // --- 2. DADOS ---
         let diaSelecionado = 'hoje';
         let horaSelecionada = null;
         let listaOcupados = [];
-        let linkFinalZap = "";
 
         const precosTabela = {
             moto: { ducha: 20, simples: 30, cera: 40, higienizacao: 100 },
@@ -172,37 +128,31 @@
             grande: { ducha: 50, simples: 70, cera: 90, higienizacao: 300 }
         };
 
-        // --- 3. INICIALIZAÇÃO ---
+        // INICIALIZAÇÃO
         window.onload = function() {
             mudarData('hoje');
             atualizarPreco();
-            ativarTempoReal(); // Ativa o listener do Supabase
+            ativarRealtime();
         };
 
-        // --- 4. TEMPO REAL (REALTIME) ---
-        function ativarTempoReal() {
-            // Escuta qualquer mudança na tabela de agendamentos
+        // --- TEMPO REAL ---
+        function ativarRealtime() {
             supabase
-                .channel('agendamentos-realtime')
-                .on('postgres_changes', { event: '*', schema: 'public', table: 'agendamentos_imperio' }, (payload) => {
-                    console.log('Mudança detectada no banco!', payload);
-                    buscarOcupados(); // Atualiza a tela imediatamente
-                    
-                    // Efeito visual de atualização
-                    const status = document.getElementById('statusRealtime');
-                    status.style.display = 'inline';
-                    setTimeout(() => status.style.display = 'none', 2000);
+                .channel('tabela-agendamentos')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'agendamentos_imperio' }, payload => {
+                    // Se houver qualquer mudança no banco, atualiza a tela
+                    document.getElementById('syncStatus').style.display = 'inline';
+                    buscarOcupados();
+                    setTimeout(() => document.getElementById('syncStatus').style.display = 'none', 2000);
                 })
                 .subscribe();
         }
 
-        // --- 5. LÓGICA DE DATA E HORA ---
+        // --- DATAS E GRID ---
         function getStrData(tipo) {
             const hoje = new Date();
             const data = tipo === 'hoje' ? hoje : new Date(hoje.setDate(hoje.getDate() + 1));
-            const diaStr = data.getDate().toString().padStart(2,'0');
-            const mesStr = (data.getMonth()+1).toString().padStart(2,'0');
-            return `${diaStr}/${mesStr}`;
+            return `${data.getDate().toString().padStart(2,'0')}/${(data.getMonth()+1).toString().padStart(2,'0')}`;
         }
 
         function mudarData(tipo) {
@@ -210,20 +160,19 @@
             document.getElementById('btnToday').className = tipo === 'hoje' ? 'date-btn selected' : 'date-btn';
             document.getElementById('btnTomorrow').className = tipo === 'amanha' ? 'date-btn selected' : 'date-btn';
             horaSelecionada = null;
-            
-            desenharGrid(); // Desenha limpo
-            buscarOcupados(); // Busca bloqueios
+            desenharGrid();
+            buscarOcupados();
         }
 
         async function buscarOcupados() {
-            const dataFormatada = getStrData(diaSelecionado);
+            const dataFmt = getStrData(diaSelecionado);
             const { data, error } = await supabase
                 .from('agendamentos_imperio')
                 .select('horario')
-                .eq('data_escolhida', dataFormatada);
+                .eq('data_escolhida', dataFmt);
 
             if (data) {
-                listaOcupados = data.map(item => item.horario);
+                listaOcupados = data.map(i => i.horario);
                 atualizarCores();
             }
         }
@@ -231,51 +180,44 @@
         function desenharGrid() {
             const container = document.getElementById('gridHorarios');
             container.innerHTML = '';
-
+            
             // Encaixe
-            container.innerHTML += `<div class="time-btn" onclick="selecionarHora(this, 'Encaixe')" style="border-color:#ff9800; color:#ff9800;">ENCAIXE</div>`;
+            container.innerHTML += `<div class="time-btn" onclick="selecionarHora(this, 'Encaixe')" style="border-color:orange; color:orange;">ENCAIXE</div>`;
 
-            let minutos = 8 * 60; // 08:00
+            let min = 8 * 60; // 08:00
             const agora = new Date();
             const horaAtual = agora.getHours();
             const minAtual = agora.getMinutes();
 
-            while (minutos < 18 * 60) {
-                const h = Math.floor(minutos / 60);
-                const m = minutos % 60;
+            while (min < 18 * 60) {
+                const h = Math.floor(min / 60);
+                const m = min % 60;
                 const horaStr = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`;
                 
                 let classes = "time-btn";
-                // ID para atualizar cor fácil
+                // ID único para manipular depois
                 let idBtn = "btn_" + horaStr.replace(':', '');
 
-                // Passado
-                if (diaSelecionado === 'hoje') {
-                    if (h < horaAtual || (h === horaAtual && m < minAtual)) {
-                        classes += " disabled";
-                    }
+                // Passado?
+                if (diaSelecionado === 'hoje' && (h < horaAtual || (h === horaAtual && m < minAtual))) {
+                    classes += " disabled";
                 }
 
                 container.innerHTML += `<div id="${idBtn}" class="${classes}" onclick="selecionarHora(this, '${horaStr}')">${horaStr}</div>`;
-                minutos += 45;
+                min += 45;
             }
         }
 
         function atualizarCores() {
-            // Remove todos os vermelhos antes
-            document.querySelectorAll('.booked').forEach(el => {
-                el.classList.remove('booked');
-                if(!el.classList.contains('disabled')) el.onclick = function() { selecionarHora(this, this.innerText) };
-            });
-
-            // Aplica vermelho nos ocupados
+            // Limpa vermelhos antigos
+            document.querySelectorAll('.booked').forEach(el => el.classList.remove('booked'));
+            
+            // Pinta novos vermelhos
             listaOcupados.forEach(hora => {
-                const id = "btn_" + hora.replace(':', '');
-                const btn = document.getElementById(id);
+                const btn = document.getElementById("btn_" + hora.replace(':', ''));
                 if (btn) {
                     btn.classList.add('booked');
-                    btn.onclick = null; // Remove clique
-                    if(horaSelecionada === hora) horaSelecionada = null; // Desmarca se eu tinha selecionado
+                    if (horaSelecionada === hora) horaSelecionada = null; // Se eu tinha selecionado e alguém pegou, solta
                 }
             });
         }
@@ -287,71 +229,52 @@
             horaSelecionada = hora;
         }
 
-        // --- 6. AGENDAMENTO SEGURO ---
+        // --- FINALIZAR (AGORA COM TRAVA REAL) ---
         async function finalizarAgendamento() {
-            if (!horaSelecionada) {
-                alert("⚠️ Escolha um horário livre.");
-                return;
-            }
+            if (!horaSelecionada) { alert("⚠️ Escolha um horário livre."); return; }
 
             document.getElementById('loading').style.display = 'flex';
 
-            const dataStr = getStrData(diaSelecionado);
-            const tamanho = document.getElementById('carSize').value;
-            const inputSvc = document.querySelector('input[name="servico"]:checked');
-            const nomeServico = inputSvc.value;
-            const valor = document.getElementById('valorTotal').innerText.replace('R$ ', '');
-            const pag = document.getElementById('pagamento').value;
-
-            // TENTA INSERIR (SE JÁ EXISTIR, O BANCO VAI DAR ERRO POR CAUSA DO UNIQUE)
-            const { error } = await supabase.from('agendamentos_imperio').insert({
-                data_escolhida: dataStr,
+            const dados = {
+                data_escolhida: getStrData(diaSelecionado),
                 horario: horaSelecionada,
-                tamanho_carro: tamanho,
-                servico_nome: nomeServico,
-                valor_cobrado: parseFloat(valor.replace(',', '.')),
-                forma_pagamento: pag
-            });
+                tamanho_carro: document.getElementById('carSize').value,
+                servico_nome: document.querySelector('input[name="servico"]:checked').value,
+                valor_cobrado: parseFloat(document.getElementById('valorTotal').innerText.replace('R$ ', '').replace(',', '.')),
+                forma_pagamento: document.getElementById('pagamento').value
+            };
+
+            // TENTA SALVAR NO BANCO
+            const { error } = await supabase.from('agendamentos_imperio').insert(dados);
 
             document.getElementById('loading').style.display = 'none';
 
             if (error) {
-                // Código 23505 é erro de duplicidade (Unique Violation)
+                // ERRO 23505 = DUPLICADO (O BANCO RECUSOU)
                 if (error.code === '23505') {
-                    alert("❌ ESSE HORÁRIO JÁ FOI RESERVADO!\nAlguém foi mais rápido. O sistema vai atualizar.");
-                    buscarOcupados(); // Atualiza a tela
+                    alert("⛔ Ops! Alguém acabou de reservar esse horário na sua frente.\nO sistema vai atualizar a agenda.");
+                    buscarOcupados();
+                } else if (horaSelecionada === 'Encaixe') {
+                    // Encaixe pode repetir, então ignora erro
+                    enviarZap(dados);
                 } else {
-                    // Se for Encaixe ou outro erro, deixa passar pro zap
-                    if (horaSelecionada === 'Encaixe') {
-                        prepararZap(dataStr, tamanho, nomeServico, valor, pag);
-                        document.getElementById('sucessoModal').style.display = 'flex';
-                    } else {
-                        alert("Erro ao salvar: " + error.message);
-                    }
+                    alert("Erro no sistema: " + error.message);
                 }
             } else {
-                // SUCESSO!
-                prepararZap(dataStr, tamanho, nomeServico, valor, pag);
-                document.getElementById('sucessoModal').style.display = 'flex';
-                buscarOcupados(); // Atualiza pra ficar vermelho pra mim também
+                // SUCESSO - VAI PRO ZAP
+                enviarZap(dados);
             }
         }
 
-        function prepararZap(data, tam, serv, val, pag) {
-            const msg = `👑 *NOVO AGENDAMENTO*\n\n🗓 Data: *${data}*\n⏰ Horário: *${horaSelecionada}*\n--------------------\n🚗 Veículo: *${tam.toUpperCase()}*\n🚿 Serviço: *${serv.toUpperCase()}*\n💰 Valor: *R$ ${val}*\n💳 Pagamento: *${pag}*`;
-            linkFinalZap = `https://wa.me/5511960671570?text=${encodeURIComponent(msg)}`;
-        }
-
-        function irParaWhatsApp() {
-            window.location.href = linkFinalZap;
+        function enviarZap(d) {
+            const msg = `👑 *NOVO AGENDAMENTO*\n🗓 ${d.data_escolhida} às ${d.horario}\n🚗 ${d.tamanho_carro.toUpperCase()}\n🚿 ${d.servico_nome.toUpperCase()}\n💰 R$ ${d.valor_cobrado}\n💳 ${d.forma_pagamento}`;
+            window.location.href = `https://wa.me/5511960671570?text=${encodeURIComponent(msg)}`;
         }
 
         function atualizarPreco() {
             const tam = document.getElementById('carSize').value;
-            const inputSvc = document.querySelector('input[name="servico"]:checked');
-            const idSvc = inputSvc.getAttribute('data-id');
-            const total = precosTabela[tam][idSvc];
-            document.getElementById('valorTotal').innerText = `R$ ${total},00`;
+            const idSvc = document.querySelector('input[name="servico"]:checked').getAttribute('data-id');
+            document.getElementById('valorTotal').innerText = `R$ ${precosTabela[tam][idSvc]},00`;
         }
     </script>
 </body>
