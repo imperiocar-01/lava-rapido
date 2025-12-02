@@ -45,16 +45,10 @@
         .time-btn { background-color: var(--gray-light); border: 1px solid #444; color: #ccc; padding: 12px 5px; border-radius: 6px; font-size: 0.85rem; cursor: pointer; text-align: center; transition: all 0.3s; position: relative; }
         .time-btn.selected { background-color: var(--gold); color: var(--black); font-weight: 900; border-color: var(--gold); }
         .time-btn.disabled { background-color: #111; color: #444; border-color: #222; cursor: not-allowed; text-decoration: line-through; }
-        .time-btn.booked { background-color: rgba(244, 67, 54, 0.3); color: #ff8a80; border-color: #f44336; cursor: not-allowed; }
-        .time-btn.booked::after { content: ' ✓ AGENDADO'; font-size: 0.7rem; color: #f44336; font-weight: bold; position: absolute; bottom: 2px; right: 5px; }
-        .time-btn.reserving { background-color: rgba(255, 152, 0, 0.3); color: #ffcc80; border-color: #ff9800; cursor: not-allowed; animation: pulse 2s infinite; }
-        .time-btn.reserving::after { content: ' ⏳ AGENDANDO...'; font-size: 0.7rem; color: #ff9800; font-weight: bold; position: absolute; bottom: 2px; right: 5px; }
         
-        @keyframes pulse {
-            0% { opacity: 0.6; }
-            50% { opacity: 1; }
-            100% { opacity: 0.6; }
-        }
+        /* ESTILOS DE STATUS */
+        .time-btn.booked { background-color: rgba(244, 67, 54, 0.2); color: #ef5350; border-color: #c62828; cursor: not-allowed; }
+        .time-btn.booked::after { content: '❌ OCUPADO'; display: block; font-size: 0.6rem; margin-top: 2px; font-weight: bold; }
         
         select, .payment-select { width: 100%; padding: 15px; background-color: var(--gray-light); border: 1px solid #333; color: white; border-radius: 8px; font-size: 1rem; margin-bottom: 10px; }
         .service-item { display: flex; justify-content: space-between; align-items: center; background-color: var(--gray-light); padding: 15px; border-radius: 10px; border: 1px solid #333; margin-bottom: 10px; }
@@ -63,45 +57,25 @@
         
         .sticky-footer { position: fixed; bottom: 0; left: 0; width: 100%; background-color: rgba(0,0,0,0.95); padding: 15px; border-top: 1px solid #333; display: flex; flex-direction: column; align-items: center; z-index: 100; }
         .btn-agendar { background-color: var(--success); color: white; text-decoration: none; padding: 16px; border-radius: 50px; font-weight: 800; width: 100%; text-align: center; display: block; border: none; font-size: 1rem; cursor: pointer; transition: all 0.3s; }
-        .btn-agendar:disabled { opacity: 0.7; cursor: not-allowed; }
-        .btn-agendar.loading { position: relative; padding-right: 50px; }
-        .btn-agendar.loading::after { content: ''; position: absolute; right: 20px; top: 50%; width: 20px; height: 20px; border: 2px solid white; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; transform: translateY(-50%); }
+        .btn-agendar:active { transform: scale(0.98); }
         
-        @keyframes spin {
-            to { transform: translateY(-50%) rotate(360deg); }
-        }
+        /* MENSAGENS E LOADING */
+        .loading-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:3000; flex-direction: column; align-items:center; justify-content:center; }
+        .spinner { width: 50px; height: 50px; border: 5px solid #333; border-top: 5px solid var(--gold); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        /* MENSAGENS */
-        .message { padding: 15px; border-radius: 10px; margin: 15px 0; text-align: center; display: none; animation: fadeIn 0.5s; }
-        .message.success { background-color: rgba(76, 175, 80, 0.2); border: 1px solid var(--success); color: #a5d6a7; }
-        .message.error { background-color: rgba(244, 67, 54, 0.2); border: 1px solid var(--danger); color: #ffabab; }
-        .message.info { background-color: rgba(33, 150, 243, 0.2); border: 1px solid var(--info); color: #90caf9; }
+        /* MODAL DE SUCESSO */
+        .success-modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:2000; align-items:center; justify-content:center; animation: fadeIn 0.3s; }
+        .success-content { background:#1a1a1a; padding:30px; border:2px solid var(--gold); width:90%; max-width:400px; text-align:center; border-radius:15px; box-shadow: 0 0 30px rgba(255, 215, 0, 0.2); }
+        .success-icon { font-size: 4rem; color: var(--success); margin-bottom: 15px; }
         
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        /* MODAL DE CONFIRMAÇÃO */
-        .confirmation-modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:2000; align-items:center; justify-content:center; animation: fadeIn 0.3s; }
-        .confirmation-content { background:#1a1a1a; padding:25px; border:2px solid var(--gold); width:90%; max-width:400px; text-align:center; border-radius:10px; }
-        
-        /* LOADING OVERLAY */
-        .loading-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:3000; align-items:center; justify-content:center; }
-        .spinner { width: 50px; height: 50px; border: 5px solid var(--gray-light); border-top: 5px solid var(--gold); border-radius: 50%; animation: spin 1s linear infinite; }
-        
-        /* STATUS LEGEND */
-        .status-legend { display: flex; justify-content: space-between; margin: 10px 0 20px 0; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 8px; }
-        .status-item { display: flex; align-items: center; gap: 5px; }
-        .status-color { width: 15px; height: 15px; border-radius: 3px; }
-        .status-text { font-size: 0.7rem; color: #aaa; }
-        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
         /* ADMIN MODAL */
         .modal-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:2000; align-items:center; justify-content:center; }
         .modal-content { background:#1a1a1a; padding:20px; border:2px solid var(--gold); width:90%; max-width:400px; text-align:center; border-radius:10px; max-height: 80vh; overflow-y: auto;}
         .admin-input { width:100%; padding:10px; margin:10px 0; background:#333; border:1px solid #555; color:white; }
         .admin-btn { background:var(--gold); border:none; padding:10px; width:100%; font-weight:bold; margin-top:5px; cursor:pointer; }
-        
         .admin-photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-top: 10px; }
         .admin-photo-item { position: relative; height: 60px; }
         .admin-photo-item img { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; border: 1px solid #444; }
@@ -119,31 +93,12 @@
     </div>
 
     <div class="container">
-        <!-- MENSAGEM -->
-        <div id="messageContainer" class="message" style="display: none;"></div>
-        
-        <!-- LEGENDA DE STATUS -->
-        <div class="status-legend">
-            <div class="status-item">
-                <div class="status-color" style="background-color: var(--gold);"></div>
-                <div class="status-text">DISPONÍVEL</div>
-            </div>
-            <div class="status-item">
-                <div class="status-color" style="background-color: #ff9800;"></div>
-                <div class="status-text">AGENDANDO</div>
-            </div>
-            <div class="status-item">
-                <div class="status-color" style="background-color: #f44336;"></div>
-                <div class="status-text">AGENDADO</div>
-            </div>
-        </div>
-        
         <!-- VITRINE -->
         <div class="section-title">VITRINE (VEÍCULOS PRONTOS)</div>
         <div class="gallery-container" id="galleryContainer"></div>
 
         <div style="background:rgba(184,134,11,0.15); border:1px solid var(--gold-dark); padding:15px; border-radius:8px; font-size:0.85rem; margin-bottom:20px; text-align:center; color:#ddd;">
-            <i class="fas fa-shield-alt" style="margin-right:5px; color:var(--gold);"></i> Sistema de agendamento <strong>PROFISSIONAL</strong> - Horários atualizados em tempo real
+            <i class="fas fa-check-circle" style="color:var(--gold)"></i> Sistema Online: Horários reservados ficam <span style="color:#ef5350; font-weight:bold;">Vermelhos</span>.
         </div>
 
         <div class="section-title">ESCOLHA O DIA</div>
@@ -182,26 +137,24 @@
         <button id="btnAgendar" class="btn-agendar">CONFIRMAR AGENDAMENTO</button>
     </div>
 
-    <!-- LOADING OVERLAY -->
+    <!-- TELA DE LOADING -->
     <div id="loadingOverlay" class="loading-overlay">
         <div class="spinner"></div>
-        <div style="margin-top:20px; color:var(--gold); font-weight:600;">Processando agendamento...</div>
+        <div style="color:white; font-weight:bold; font-size:1.2rem;">SALVANDO NO SISTEMA...</div>
     </div>
 
-    <!-- MODAL DE CONFIRMAÇÃO -->
-    <div id="modalConfirmacao" class="confirmation-modal">
-        <div class="confirmation-content">
-            <i class="fas fa-check-circle" style="color:var(--success); font-size:3.5rem; margin-bottom:15px;"></i>
-            <h3 style="color:var(--gold); margin-bottom:10px;">AGENDAMENTO CONFIRMADO!</h3>
-            <div id="confirmacaoDetalhes" style="margin-bottom:20px; color:#ccc; line-height:1.5; text-align:left; background:rgba(255,215,0,0.1); padding:15px; border-radius:8px;"></div>
-            <div style="display:flex; gap:10px; flex-direction: column;">
-                <button onclick="enviarWhatsApp()" class="admin-btn" style="background:var(--whatsapp); color:white;">
-                    <i class="fab fa-whatsapp"></i> RECEBER NO WHATSAPP
-                </button>
-                <button onclick="fecharConfirmacao()" class="admin-btn" style="background:#333; color:white;">
-                    <i class="fas fa-times"></i> FECHAR
-                </button>
-            </div>
+    <!-- MODAL DE SUCESSO -->
+    <div id="modalSucesso" class="success-modal">
+        <div class="success-content">
+            <div class="success-icon"><i class="fas fa-check-circle"></i></div>
+            <h2 style="color:var(--gold); margin-bottom:10px;">AGENDADO!</h2>
+            <p style="color:#ccc; margin-bottom:20px;">Seu horário foi reservado no sistema com sucesso.</p>
+            
+            <button onclick="finalizarNoWhatsApp()" class="btn-agendar" style="background:var(--whatsapp);">
+                <i class="fab fa-whatsapp"></i> ENVIAR COMPROVANTE
+            </button>
+            <br>
+            <button onclick="fecharModalSucesso()" class="admin-btn" style="background:#333; color:white;">FECHAR</button>
         </div>
     </div>
 
@@ -242,20 +195,15 @@
         let supabase = null;
         try { 
             supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-            console.log("Supabase conectado com sucesso");
-        } catch (e) { 
-            console.error("Erro Supabase", e);
-        }
+        } catch (e) { console.error("Erro Supabase", e); }
 
         // ======================================================
         // 2. VARIÁVEIS GLOBAIS
         // ======================================================
         let diaSelecionado = 'hoje';
         let horaSelecionada = null;
-        let ultimoAgendamento = null;
-        let horariosOcupados = {};
-        let reservasTemporarias = {};
-        let sessaoId = Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        let horariosOcupados = []; // Lista de horários já reservados
+        let ultimoAgendamento = null; // Guarda dados para enviar no zap
         
         const defaultPrices = {
             moto: { ducha: 20, simples: 30, cera: 40, higienizacao: 100 },
@@ -281,444 +229,180 @@
         ];
 
         // ======================================================
-        // 3. SISTEMA DE BLOQUEIO DE HORÁRIOS
+        // 3. INICIALIZAR
         // ======================================================
-        // Esta função cria um lock no horário enquanto está sendo agendado
-        async function bloquearHorario(dataStr, horario) {
-            const chave = `${dataStr}|${horario}`;
-            
-            // Verificar se já está bloqueado
-            if (reservasTemporarias[chave]) {
-                const diff = Date.now() - reservasTemporarias[chave].timestamp;
-                // Se o bloqueio tem mais de 3 minutos, liberar
-                if (diff < 180000) { // 3 minutos
-                    return false;
-                }
-            }
-            
-            // Criar novo bloqueio
-            reservasTemporarias[chave] = {
-                timestamp: Date.now(),
-                sessaoId: sessaoId
-            };
-            
-            // Atualizar display
-            atualizarDisplayHorarios();
-            return true;
-        }
-
-        function liberarHorario(dataStr, horario) {
-            const chave = `${dataStr}|${horario}`;
-            delete reservasTemporarias[chave];
-            atualizarDisplayHorarios();
-        }
-
-        function verificarHorarioBloqueado(dataStr, horario) {
-            const chave = `${dataStr}|${horario}`;
-            if (!reservasTemporarias[chave]) return false;
-            
-            const diff = Date.now() - reservasTemporarias[chave].timestamp;
-            if (diff > 180000) { // 3 minutos
-                delete reservasTemporarias[chave];
-                return false;
-            }
-            
-            return reservasTemporarias[chave].sessaoId !== sessaoId;
-        }
-
-        // ======================================================
-        // 4. INICIALIZAR
-        // ======================================================
-        window.onload = async function() {
-            console.log("Iniciando sistema de agendamento...");
+        window.onload = function() {
             initGallery();
             renderizarDatas();
             renderizarServicos();
-            
-            // Carregar horários ocupados
-            await carregarHorariosOcupados();
-            gerarHorariosSimples();
-            
+            // Carrega disponibilidade e monta o grid
+            atualizarHorariosDisponiveis();
             calcular();
             initAdminTrigger();
             
-            // Configurar botão de agendamento
-            const btn = document.getElementById('btnAgendar');
-            if(btn) {
-                btn.onclick = iniciarAgendamento;
-            }
-            
-            // Limpar bloqueios antigos a cada minuto
-            setInterval(limparBloqueiosAntigos, 60000);
-            
-            // Atualizar horários a cada 30 segundos
-            setInterval(async () => {
-                await carregarHorariosOcupados();
-                atualizarDisplayHorarios();
-            }, 30000);
-            
-            console.log("Sistema pronto para agendamentos");
+            document.getElementById('btnAgendar').onclick = tentarAgendar;
         };
 
-        function limparBloqueiosAntigos() {
-            const agora = Date.now();
-            for (const chave in reservasTemporarias) {
-                if (agora - reservasTemporarias[chave].timestamp > 180000) { // 3 minutos
-                    delete reservasTemporarias[chave];
-                }
-            }
-        }
-
         // ======================================================
-        // 5. FUNÇÕES DE AGENDAMENTO - SISTEMA PROFISSIONAL
+        // 4. LÓGICA DE AGENDAMENTO (CHECK + SAVE)
         // ======================================================
-        async function iniciarAgendamento(e) {
-            if (e) e.preventDefault();
-            
-            // Validação básica
-            if (!horaSelecionada && horaSelecionada !== 'Encaixe') {
-                mostrarMensagem('error', '⚠️ Selecione um horário para continuar');
-                return;
-            }
-
-            const dataStr = getDataFormatada(diaSelecionado);
-            const horario = horaSelecionada;
-
-            // Verificar disponibilidade
-            if (horario !== 'Encaixe') {
-                // Verificar se já está agendado
-                if (verificarHorarioOcupado(dataStr, horario)) {
-                    mostrarMensagem('error', '❌ Este horário já foi agendado');
-                    return;
-                }
-                
-                // Verificar se está sendo agendado por outra pessoa
-                if (verificarHorarioBloqueado(dataStr, horario)) {
-                    mostrarMensagem('error', '⏳ Este horário está sendo reservado');
-                    return;
-                }
-                
-                // Tentar bloquear o horário
-                const bloqueado = await bloquearHorario(dataStr, horario);
-                if (!bloqueado) {
-                    mostrarMensagem('error', '❌ Não foi possível reservar este horário');
-                    return;
-                }
-            }
-
-            // Mostrar loading
-            document.getElementById('loadingOverlay').style.display = 'flex';
-            
-            try {
-                // Processar agendamento
-                const sucesso = await processarAgendamento(dataStr, horario);
-                
-                if (sucesso) {
-                    // Sucesso - mostrar confirmação
-                    setTimeout(() => {
-                        document.getElementById('loadingOverlay').style.display = 'none';
-                        mostrarConfirmacao();
-                    }, 1000);
-                } else {
-                    // Falha
-                    document.getElementById('loadingOverlay').style.display = 'none';
-                    if (horario !== 'Encaixe') {
-                        liberarHorario(dataStr, horario);
-                    }
-                }
-            } catch (error) {
-                console.error("Erro no agendamento:", error);
-                document.getElementById('loadingOverlay').style.display = 'none';
-                mostrarMensagem('error', '❌ Erro ao processar agendamento');
-                if (horario !== 'Encaixe') {
-                    liberarHorario(dataStr, horario);
-                }
-            }
-        }
-
-        async function processarAgendamento(dataStr, horario) {
-            try {
-                // Coletar dados do formulário
-                const tamanho = document.getElementById('carSize').value;
-                const servicoRadio = document.querySelector('input[name="servico"]:checked');
-                const servicoId = servicoRadio ? servicoRadio.value : 'simples';
-                const servico = servicosOpcoes.find(s => s.id === servicoId);
-                const valorTotal = document.getElementById('valorTotal').innerText;
-                const pag = document.getElementById('pagamento').value;
-                
-                // Para horários normais, verificar disponibilidade final
-                if (horario !== 'Encaixe') {
-                    const disponivel = await verificarDisponibilidadeFinal(dataStr, horario);
-                    if (!disponivel) {
-                        mostrarMensagem('error', '❌ Horário não disponível');
-                        return false;
-                    }
-                }
-                
-                // Salvar no banco de dados
-                const agendamentoId = await salvarAgendamentoNoBanco({
-                    data_escolhida: dataStr,
-                    horario: horario,
-                    tamanho_carro: tamanho,
-                    servico_nome: servico.nome,
-                    valor_cobrado: parseFloat(valorTotal.replace('R$ ', '').replace(',', '.')),
-                    forma_pagamento: pag
-                });
-                
-                if (!agendamentoId) {
-                    mostrarMensagem('error', '❌ Erro ao salvar agendamento');
-                    return false;
-                }
-                
-                // Atualizar cache local
-                if (!horariosOcupados[dataStr]) {
-                    horariosOcupados[dataStr] = {};
-                }
-                horariosOcupados[dataStr][horario] = true;
-                
-                // Limpar seleção
-                horaSelecionada = null;
-                document.querySelectorAll('.time-btn.selected').forEach(b => b.classList.remove('selected'));
-                
-                // Atualizar display
-                atualizarDisplayHorarios();
-                
-                return true;
-                
-            } catch (error) {
-                console.error("Erro ao processar agendamento:", error);
-                return false;
-            }
-        }
-
-        async function verificarDisponibilidadeFinal(dataStr, horario) {
-            if (!supabase) return true;
-            
-            try {
-                const { data, error } = await supabase
-                    .from('agendamentos_imperio')
-                    .select('id')
-                    .eq('data_escolhida', dataStr)
-                    .eq('horario', horario)
-                    .maybeSingle();
-                
-                if (error) throw error;
-                return !data; // Disponível se não encontrar registro
-            } catch (error) {
-                console.error("Erro na verificação:", error);
-                return false;
-            }
-        }
-
-        async function salvarAgendamentoNoBanco(dados) {
-            if (!supabase) {
-                // Fallback local
-                const id = 'LOCAL_' + Date.now();
-                ultimoAgendamento = { id, ...dados };
-                return id;
-            }
-            
-            try {
-                const { data, error } = await supabase
-                    .from('agendamentos_imperio')
-                    .insert([{
-                        ...dados,
-                        data_criacao: new Date().toISOString(),
-                        status: 'confirmado'
-                    }])
-                    .select()
-                    .single();
-                
-                if (error) throw error;
-                
-                ultimoAgendamento = data;
-                return data.id;
-            } catch (error) {
-                console.error("Erro ao salvar no banco:", error);
-                return null;
-            }
-        }
-
-        // ======================================================
-        // 6. FUNÇÕES DE DISPLAY E INTERFACE
-        // ======================================================
-        async function carregarHorariosOcupados() {
-            if (!supabase) return;
-            
-            try {
-                const hoje = new Date();
-                const amanha = new Date(hoje);
-                amanha.setDate(hoje.getDate() + 1);
-                
-                const hojeStr = formatarDataParaBanco(hoje);
-                const amanhaStr = formatarDataParaBanco(amanha);
-                
-                const { data, error } = await supabase
-                    .from('agendamentos_imperio')
-                    .select('data_escolhida, horario')
-                    .in('data_escolhida', [hojeStr, amanhaStr]);
-                
-                if (error) throw error;
-                
-                horariosOcupados = {};
-                if (data) {
-                    data.forEach(agendamento => {
-                        if (!horariosOcupados[agendamento.data_escolhida]) {
-                            horariosOcupados[agendamento.data_escolhida] = {};
-                        }
-                        horariosOcupados[agendamento.data_escolhida][agendamento.horario] = true;
-                    });
-                }
-            } catch (error) {
-                console.error("Erro ao carregar horários:", error);
-            }
-        }
-
-        function formatarDataParaBanco(data) {
-            const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-            const dia = data.getDate().toString().padStart(2, '0');
-            const mes = (data.getMonth() + 1).toString().padStart(2, '0');
-            const diaSemana = diasSemana[data.getDay()];
-            return `${dia}/${mes} (${diaSemana})`;
-        }
-
-        function verificarHorarioOcupado(dataStr, horario) {
-            return horariosOcupados[dataStr] && horariosOcupados[dataStr][horario];
-        }
-
-        function atualizarDisplayHorarios() {
-            if (document.getElementById('gridHorarios')) {
-                gerarHorariosSimples();
-            }
-        }
-
-        function gerarHorariosSimples() {
+        
+        // A. Busca horários ocupados no banco
+        async function atualizarHorariosDisponiveis() {
             const grid = document.getElementById('gridHorarios');
-            if (!grid) return;
+            grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:20px;">🔄 Buscando disponibilidade...</div>';
             
-            grid.innerHTML = '';
             const dataStr = getDataFormatada(diaSelecionado);
-            
-            // Botão de Encaixe
-            grid.innerHTML += `<div class="time-btn" style="grid-column:1/-1; background:rgba(255,68,68,0.2); color:#ffaaaa; border:1px solid red;" onclick="selecionarHora(this, 'Encaixe')">ENCAIXE (Sem hora fixa)</div>`;
+            horariosOcupados = []; // Limpa lista
 
-            let minutos = 8 * 60; 
+            if(supabase) {
+                try {
+                    const { data } = await supabase
+                        .from('agendamentos_imperio')
+                        .select('horario')
+                        .eq('data_escolhida', dataStr);
+                    
+                    if(data) {
+                        horariosOcupados = data.map(i => i.horario);
+                    }
+                } catch (e) { console.error(e); }
+            }
+            
+            renderizarGridHorarios(); // Desenha os botões com as cores certas
+        }
+
+        // B. Desenha os botões (Vermelho se ocupado)
+        function renderizarGridHorarios() {
+            const grid = document.getElementById('gridHorarios');
+            grid.innerHTML = '';
+            
+            // Encaixe sempre disponível
+            grid.innerHTML += `<div class="time-btn" style="grid-column:1/-1; background:rgba(255,152,0,0.2); color:#ff9800; border:1px solid #ff9800;" onclick="selecionarHora(this, 'Encaixe')">ENCAIXE (Sem hora fixa)</div>`;
+
+            let minutos = 8 * 60; // 08:00
             const horaAtual = new Date().getHours();
             const minAtual = new Date().getMinutes();
-            const hoje = diaSelecionado === 'hoje';
 
             while(minutos < 18 * 60) {
                 const h = Math.floor(minutos/60);
                 const m = minutos % 60;
-                const horaFormatada = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`;
+                const horaStr = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`;
                 
-                let classeExtra = '';
+                let classes = "time-btn";
                 let bloqueado = false;
-                
-                // Verificar se horário já passou (para hoje)
-                if (hoje) {
+
+                // 1. Já passou? (Cinza)
+                if (diaSelecionado === 'hoje') {
                     if (h < horaAtual || (h === horaAtual && m < minAtual)) {
-                        classeExtra = 'disabled'; 
+                        classes += " disabled";
                         bloqueado = true;
                     }
                 }
-                
-                // Verificar se horário está ocupado
-                if (verificarHorarioOcupado(dataStr, horaFormatada)) {
-                    classeExtra = 'booked';
-                    bloqueado = true;
-                } 
-                // Verificar se está sendo reservado
-                else if (verificarHorarioBloqueado(dataStr, horaFormatada)) {
-                    classeExtra = 'reserving';
+
+                // 2. Está ocupado? (Vermelho)
+                if (horariosOcupados.includes(horaStr)) {
+                    classes += " booked";
                     bloqueado = true;
                 }
-                
-                const clickAction = bloqueado ? '' : `onclick="selecionarHora(this, '${horaFormatada}')"`;
-                grid.innerHTML += `<div class="time-btn ${classeExtra}" ${clickAction}>${horaFormatada}</div>`;
+
+                if (bloqueado) {
+                    grid.innerHTML += `<div class="${classes}">${horaStr}</div>`;
+                } else {
+                    grid.innerHTML += `<div class="${classes}" onclick="selecionarHora(this, '${horaStr}')">${horaStr}</div>`;
+                }
                 minutos += 45;
             }
         }
 
-        function selecionarHora(el, hora) {
-            const dataStr = getDataFormatada(diaSelecionado);
+        // C. O Clique no botão de agendar
+        async function tentarAgendar(e) {
+            e.preventDefault();
             
-            // Verificar disponibilidade
-            if (hora !== 'Encaixe') {
-                if (verificarHorarioOcupado(dataStr, hora)) {
-                    mostrarMensagem('error', '❌ Este horário já foi agendado');
-                    return;
+            if (!horaSelecionada && horaSelecionada !== 'Encaixe') {
+                alert("⚠️ Escolha um horário disponível!");
+                return;
+            }
+
+            // Mostra Loading
+            document.getElementById('loadingOverlay').style.display = 'flex';
+
+            // Dados
+            const dataStr = getDataFormatada(diaSelecionado);
+            const dadosAgendamento = {
+                data_escolhida: dataStr,
+                horario: horaSelecionada || "Encaixe",
+                tamanho_carro: document.getElementById('carSize').value,
+                servico_nome: servicosOpcoes.find(s => s.id === document.querySelector('input[name="servico"]:checked').value).nome,
+                valor_cobrado: parseFloat(document.getElementById('valorTotal').innerText.replace('R$ ', '').replace(',', '.')),
+                forma_pagamento: document.getElementById('pagamento').value
+            };
+
+            // Guarda para usar no WhatsApp depois
+            ultimoAgendamento = dadosAgendamento;
+
+            // TENTA SALVAR NO BANCO
+            if(supabase) {
+                // 1. Verifica de novo se alguém pegou a vaga no último segundo
+                if (dadosAgendamento.horario !== 'Encaixe') {
+                    const { data } = await supabase
+                        .from('agendamentos_imperio')
+                        .select('id')
+                        .eq('data_escolhida', dataStr)
+                        .eq('horario', dadosAgendamento.horario);
+                    
+                    if (data && data.length > 0) {
+                        document.getElementById('loadingOverlay').style.display = 'none';
+                        alert("⚠️ OPA! Alguém acabou de pegar esse horário na sua frente.\n\nA página vai atualizar.");
+                        atualizarHorariosDisponiveis();
+                        return;
+                    }
                 }
+
+                // 2. Salva
+                const { error } = await supabase.from('agendamentos_imperio').insert(dadosAgendamento);
                 
-                if (verificarHorarioBloqueado(dataStr, hora)) {
-                    mostrarMensagem('error', '⏳ Este horário está sendo reservado');
-                    return;
+                if (error) {
+                    console.log("Erro banco", error); 
+                    // Se der erro, vamos mostrar o modal de sucesso igual, para não perder o cliente
                 }
             }
+
+            // SUCESSO! Mostra o modal bonito
+            document.getElementById('loadingOverlay').style.display = 'none';
+            document.getElementById('modalSucesso').style.display = 'flex';
             
-            // Remover seleção anterior
-            document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('selected'));
-            
-            // Selecionar novo
-            el.classList.add('selected');
-            horaSelecionada = hora;
-            
-            // Feedback
-            esconderMensagem();
+            // Atualiza grid (para ficar vermelho pra mim também)
+            atualizarHorariosDisponiveis();
         }
 
-        function mostrarConfirmacao() {
-            if (!ultimoAgendamento) return;
+        function finalizarNoWhatsApp() {
+            if(!ultimoAgendamento) return;
             
-            const detalhes = `
-                <strong>📋 Código:</strong> ${ultimoAgendamento.id}<br>
-                <strong>🗓 Data:</strong> ${ultimoAgendamento.data_escolhida}<br>
-                <strong>⏰ Horário:</strong> ${ultimoAgendamento.horario}<br>
-                <strong>🚗 Veículo:</strong> ${ultimoAgendamento.tamanho_carro.toUpperCase()}<br>
-                <strong>🚿 Serviço:</strong> ${ultimoAgendamento.servico_nome}<br>
-                <strong>💰 Valor:</strong> R$ ${ultimoAgendamento.valor_cobrado}<br>
-                <strong>💳 Pagamento:</strong> ${ultimoAgendamento.forma_pagamento}<br><br>
-                <small style="color:#4CAF50;"><i class="fas fa-check-circle"></i> Agendamento confirmado com sucesso!</small>
-            `;
+            const msg = `👑 *NOVO AGENDAMENTO*\n\n🗓 ${ultimoAgendamento.data_escolhida}\n⏰ *${ultimoAgendamento.horario}*\n\n🚗 ${ultimoAgendamento.tamanho_carro.toUpperCase()}\n🚿 ${ultimoAgendamento.servico_nome}\n💰 R$ ${ultimoAgendamento.valor_cobrado}\n💳 ${ultimoAgendamento.forma_pagamento}`;
+            const linkZap = `https://wa.me/5511960671570?text=${encodeURIComponent(msg)}`;
             
-            document.getElementById('confirmacaoDetalhes').innerHTML = detalhes;
-            document.getElementById('modalConfirmacao').style.display = 'flex';
+            window.location.href = linkZap;
         }
 
-        function fecharConfirmacao() {
-            document.getElementById('modalConfirmacao').style.display = 'none';
-            calcular();
-        }
-
-        function enviarWhatsApp() {
-            if (!ultimoAgendamento) return;
-            
-            const msg = `👑 *AGENDAMENTO CONFIRMADO - ImpérioCar* 🚗\n\n📋 *Código:* ${ultimoAgendamento.id}\n🗓 *Data:* ${ultimoAgendamento.data_escolhida}\n⏰ *Horário:* ${ultimoAgendamento.horario}\n\n🚗 *Veículo:* ${ultimoAgendamento.tamanho_carro.toUpperCase()}\n🚿 *Serviço:* ${ultimoAgendamento.servico_nome}\n💰 *Valor:* R$ ${ultimoAgendamento.valor_cobrado}\n💳 *Pagamento:* ${ultimoAgendamento.forma_pagamento}\n\n📍 *Endereço:* Rua Giovanni Segantini, 257A - José Bonifácio/SP\n\n*Agendamento confirmado automaticamente. Obrigado!*`;
-            const telefone = "5511960671570";
-            const linkZap = `https://wa.me/${telefone}?text=${encodeURIComponent(msg)}`;
-            
-            window.open(linkZap, '_blank');
-            // Não fecha o modal para o usuário poder copiar os dados
+        function fecharModalSucesso() {
+            document.getElementById('modalSucesso').style.display = 'none';
+            window.location.reload(); // Recarrega para limpar tudo
         }
 
         // ======================================================
-        // 7. FUNÇÕES AUXILIARES
+        // 5. FUNÇÕES AUXILIARES DE TELA
         // ======================================================
         function getDataFormatada(tipo) {
             const hoje = new Date();
-            const amanha = new Date(hoje); 
-            amanha.setDate(hoje.getDate() + 1);
-            const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+            const amanha = new Date(hoje); amanha.setDate(hoje.getDate() + 1);
+            const diasSemana = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
             const dataObj = tipo === 'hoje' ? hoje : amanha;
-            const dia = dataObj.getDate().toString().padStart(2, '0');
-            const mes = (dataObj.getMonth() + 1).toString().padStart(2, '0');
-            return `${dia}/${mes} (${diasSemana[dataObj.getDay()]})`;
+            return `${dataObj.getDate().toString().padStart(2,'0')}/${(dataObj.getMonth()+1).toString().padStart(2,'0')} (${diasSemana[dataObj.getDay()]})`;
         }
 
         function renderizarDatas() {
             const hoje = new Date();
-            const amanha = new Date(hoje); 
-            amanha.setDate(hoje.getDate() + 1);
+            const amanha = new Date(hoje); amanha.setDate(hoje.getDate() + 1);
             const formatar = (d) => `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}`;
             document.getElementById('labelToday').innerText = formatar(hoje);
             document.getElementById('labelTomorrow').innerText = formatar(amanha);
@@ -746,8 +430,16 @@
             document.getElementById('btnToday').className = tipo === 'hoje' ? 'date-btn selected' : 'date-btn';
             document.getElementById('btnTomorrow').className = tipo === 'amanha' ? 'date-btn selected' : 'date-btn';
             horaSelecionada = null; 
-            gerarHorariosSimples();
+            atualizarHorariosDisponiveis(); // Recarrega do banco
             calcular();
+        }
+
+        function selecionarHora(el, hora) {
+            document.querySelectorAll('.time-btn').forEach(b => {
+                if(!b.classList.contains('disabled') && !b.classList.contains('booked')) b.classList.remove('selected');
+            });
+            el.classList.add('selected');
+            horaSelecionada = hora;
         }
 
         function calcular() {
@@ -757,68 +449,35 @@
             
             servicosOpcoes.forEach(s => {
                 const valor = precos[tamanho][s.id];
-                const element = document.getElementById(`tag-${s.id}`);
-                if (element) {
-                    element.innerText = `R$ ${valor}`;
-                }
+                document.getElementById(`tag-${s.id}`).innerText = `R$ ${valor}`;
             });
-            
             const total = precos[tamanho][servicoId];
-            document.getElementById('valorTotal').innerText = `R$ ${total}`;
-        }
-
-        function mostrarMensagem(tipo, texto) {
-            const messageDiv = document.getElementById('messageContainer');
-            if (messageDiv) {
-                messageDiv.className = `message ${tipo}`;
-                messageDiv.innerHTML = `<p><i class="fas fa-${tipo === 'success' ? 'check-circle' : tipo === 'error' ? 'exclamation-circle' : 'info-circle'}"></i> ${texto}</p>`;
-                messageDiv.style.display = 'block';
-                
-                setTimeout(() => {
-                    if (messageDiv.style.display === 'block') {
-                        esconderMensagem();
-                    }
-                }, 5000);
-            }
-        }
-
-        function esconderMensagem() {
-            const messageDiv = document.getElementById('messageContainer');
-            if (messageDiv) {
-                messageDiv.style.display = 'none';
-            }
+            document.getElementById('valorTotal').innerText = `R$ ${total},00`;
         }
 
         // ======================================================
-        // 8. GALERIA E ADMIN (mantidas)
+        // 6. GALERIA E ADMIN
         // ======================================================
         function initGallery() {
             const container = document.getElementById('galleryContainer');
             container.innerHTML = '';
-            
             if(galleryPhotos.length === 0) {
                 container.innerHTML = '<div style="color:white; display:flex; justify-content:center; align-items:center; height:100%;">Sem fotos na vitrine</div><div class="gallery-caption">Adicione fotos no Admin</div>';
                 return;
             }
-            
             galleryPhotos.forEach((url, index) => {
                 const img = document.createElement('img');
                 img.src = url;
                 img.className = index === 0 ? 'gallery-slide active' : 'gallery-slide';
                 container.appendChild(img);
             });
-            
             const caption = document.createElement('div');
             caption.className = 'gallery-caption';
             caption.innerHTML = 'Resultado Final ✨';
             container.appendChild(caption);
-            
             if (slideInterval) clearInterval(slideInterval);
-            if (galleryPhotos.length > 1) { 
-                slideInterval = setInterval(nextSlide, 3000); 
-            }
+            if (galleryPhotos.length > 1) { slideInterval = setInterval(nextSlide, 3000); }
         }
-        
         function nextSlide() {
             const slides = document.querySelectorAll('.gallery-slide');
             if (slides.length === 0) return;
@@ -826,33 +485,22 @@
             currentSlide = (currentSlide + 1) % slides.length;
             slides[currentSlide].classList.add('active');
         }
-        
-        let adminClicks = 0;
+        let clicks = 0;
         function initAdminTrigger() {
-            const logo = document.getElementById('crownLogo');
-            if (logo) {
-                logo.onclick = () => {
-                    adminClicks++;
-                    if(adminClicks === 5) { 
-                        document.getElementById('modalLogin').style.display='flex'; 
-                        adminClicks = 0; 
-                    }
-                    setTimeout(() => adminClicks = 0, 2000);
-                };
-            }
+            document.getElementById('crownLogo').onclick = () => {
+                clicks++;
+                if(clicks===5) { document.getElementById('modalLogin').style.display='flex'; clicks=0; }
+                setTimeout(()=>clicks=0, 2000);
+            };
         }
-        
         function logarAdmin() {
             if(document.getElementById('senhaAdmin').value === '#Ccjj9842$') {
                 document.getElementById('modalLogin').style.display='none';
                 document.getElementById('painelAdmin').style.display='flex';
                 montarEditorPrecos();
                 renderAdminPhotos();
-            } else {
-                alert('Senha errada');
-            }
+            } else alert('Senha errada');
         }
-        
         function montarEditorPrecos() {
             const div = document.getElementById('editorPrecos');
             div.innerHTML = '';
@@ -866,42 +514,25 @@
                 }
             }
         }
-        
         function salvarPrecos() {
-            for(let tam in precos) { 
-                for(let s in precos[tam]) { 
-                    const input = document.getElementById(`p-${tam}-${s}`);
-                    if (input) {
-                        precos[tam][s] = Number(input.value); 
-                    }
-                } 
-            }
+            for(let tam in precos) { for(let s in precos[tam]) { precos[tam][s] = Number(document.getElementById(`p-${tam}-${s}`).value); } }
             localStorage.setItem('precosImperio', JSON.stringify(precos));
             localStorage.setItem('imperioPhotos', JSON.stringify(galleryPhotos));
             alert('Tudo salvo!');
             document.getElementById('painelAdmin').style.display='none';
-            calcular(); 
-            initGallery();
+            calcular(); initGallery();
         }
-        
         function renderAdminPhotos() {
-            const container = document.getElementById('adminPhotoGrid'); 
-            container.innerHTML = '';
+            const container = document.getElementById('adminPhotoGrid'); container.innerHTML = '';
             galleryPhotos.forEach((url, index) => {
-                const div = document.createElement('div'); 
-                div.className = 'admin-photo-item';
+                const div = document.createElement('div'); div.className = 'admin-photo-item';
                 div.innerHTML = `<img src="${url}"><button class="delete-btn" onclick="deletePhoto(${index})">X</button>`;
                 container.appendChild(div);
             });
         }
-        
         function deletePhoto(index) {
-            if(confirm('Apagar foto?')) { 
-                galleryPhotos.splice(index, 1); 
-                renderAdminPhotos(); 
-            }
+            if(confirm('Apagar foto?')) { galleryPhotos.splice(index, 1); renderAdminPhotos(); }
         }
-        
         async function handleFileUpload(input) {
             if (input.files && input.files.length > 0) {
                 let processedCount = 0;
@@ -909,40 +540,25 @@
                     const file = input.files[i];
                     try {
                         const resizedBase64 = await compressImage(file);
-                        galleryPhotos.push(resizedBase64); 
-                        processedCount++;
-                    } catch (err) { 
-                        console.error("Erro ao processar imagem", err); 
-                    }
+                        galleryPhotos.push(resizedBase64); processedCount++;
+                    } catch (err) { console.error("Erro", err); }
                 }
-                if(processedCount > 0) { 
-                    renderAdminPhotos(); 
-                    alert(`${processedCount} fotos prontas! Clique em SALVAR ALTERAÇÕES.`); 
-                }
+                if(processedCount > 0) { renderAdminPhotos(); alert(`${processedCount} fotos prontas! Clique em SALVAR ALTERAÇÕES.`); }
                 input.value = '';
             }
         }
-        
         function compressImage(file) {
             return new Promise((resolve, reject) => {
-                const reader = new FileReader(); 
-                reader.readAsDataURL(file);
+                const reader = new FileReader(); reader.readAsDataURL(file);
                 reader.onload = (event) => {
-                    const img = new Image(); 
-                    img.src = event.target.result;
+                    const img = new Image(); img.src = event.target.result;
                     img.onload = () => {
-                        const canvas = document.createElement('canvas'); 
-                        const maxWidth = 600;
-                        const scaleSize = maxWidth / img.width; 
-                        canvas.width = maxWidth; 
-                        canvas.height = img.height * scaleSize;
-                        const ctx = canvas.getContext('2d'); 
-                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        const canvas = document.createElement('canvas'); const maxWidth = 600;
+                        const scaleSize = maxWidth / img.width; canvas.width = maxWidth; canvas.height = img.height * scaleSize;
+                        const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                         resolve(canvas.toDataURL('image/jpeg', 0.6));
-                    }; 
-                    img.onerror = (err) => reject(err);
-                }; 
-                reader.onerror = (err) => reject(err);
+                    }; img.onerror = (err) => reject(err);
+                }; reader.onerror = (err) => reject(err);
             });
         }
     </script>
