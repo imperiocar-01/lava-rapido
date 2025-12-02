@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800;900&display=swap" rel="stylesheet">
     
-    <!-- CONEXÃO COM O BANCO DE DADOS -->
+    <!-- SUPABASE -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
@@ -24,7 +24,7 @@
         .box { padding: 20px; max-width: 500px; margin: 0 auto; }
         .label { color: #888; font-size: 0.8rem; margin-top: 15px; margin-bottom: 5px; font-weight: bold; text-transform: uppercase;}
 
-        /* DATAS */
+        /* BOTOES DE DATA */
         .dates { display: flex; gap: 10px; }
         .d-btn { flex: 1; background: var(--gray); border: 1px solid #444; color: #ccc; padding: 15px; border-radius: 8px; text-align: center; cursor: pointer; }
         .d-btn.active { background: var(--gold); color: black; font-weight: bold; border-color: var(--gold); box-shadow: 0 0 10px rgba(255, 215, 0, 0.3); }
@@ -36,12 +36,20 @@
         .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 5px; }
         .h-btn { background: var(--gray); border: 1px solid #444; color: white; padding: 12px 5px; border-radius: 6px; text-align: center; font-size: 0.85rem; cursor: pointer; transition: 0.2s; }
         
-        /* ESTADOS DOS BOTÕES DE HORA */
+        /* ESTADOS DOS BOTÕES */
         .h-btn.selected { background: var(--gold); color: black; font-weight: bold; border-color: var(--gold); transform: scale(1.05); }
-        .h-btn.disabled { opacity: 0.3; text-decoration: line-through; cursor: not-allowed; background: #000; border-color: #222; }
-        .h-btn.taken { background: #500; color: #fab; border-color: #a00; cursor: not-allowed; opacity: 0.8; }
+        
+        /* AQUI ESTÁ A CORREÇÃO VISUAL: RISCADO PARA TUDO QUE É INDISPONÍVEL */
+        .h-btn.disabled { 
+            opacity: 0.4; 
+            text-decoration: line-through; 
+            cursor: not-allowed; 
+            background: #1a1a1a; 
+            border-color: #333; 
+            color: #555;
+        }
 
-        /* RODAPÉ FIXO */
+        /* RODAPÉ */
         .footer { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(0,0,0,0.95); padding: 15px; border-top: 1px solid #333; display: flex; justify-content: space-between; align-items: center; z-index: 100; }
         .total { font-size: 1.4rem; font-weight: 900; color: var(--gold); margin-left: 20px; }
         .confirm-btn { background: var(--gold); color: black; border: none; padding: 12px 25px; border-radius: 30px; font-weight: 900; font-size: 1rem; margin-right: 20px; cursor: pointer; text-transform: uppercase; }
@@ -105,11 +113,9 @@
             <option>Dinheiro</option>
         </select>
         
-        <!-- Status de Conexão -->
-        <div style="text-align: center; margin-top: 20px; font-size: 0.7rem; color: #555;" id="statusSys">Conectando ao sistema...</div>
+        <div style="text-align: center; margin-top: 20px; font-size: 0.7rem; color: #555;" id="statusSys">...</div>
     </div>
 
-    <!-- RODAPE FIXO -->
     <div class="footer">
         <div class="total" id="total">R$ 0,00</div>
         <button id="btnConfirmar" class="confirm-btn" onclick="agendar()">CONFIRMAR</button>
@@ -126,11 +132,11 @@
                 <div class="info-row"><span>Veículo:</span> <strong id="rCarro">--</strong></div>
                 <div class="info-row"><span>Serviço:</span> <strong id="rServico">--</strong></div>
                 <div class="info-row"><span>Valor:</span> <strong id="rValor" style="color:green">--</strong></div>
-                <div style="margin-top:10px; font-size:0.7rem; color:#888;">ID: <span id="rID">...</span></div>
+                <div style="margin-top:10px; font-size:0.7rem; color:#888;">Protocolo: <span id="rID">...</span></div>
             </div>
             
             <a href="#" id="linkZap" class="zap-btn">
-                <i class="fab fa-whatsapp"></i> Enviar Comprovante
+                <i class="fab fa-whatsapp"></i> Enviar no WhatsApp
             </a>
             
             <button class="close-btn" onclick="location.reload()">FECHAR</button>
@@ -153,21 +159,19 @@
             grande: { ducha: 50, simples: 70, cera: 90, higienizacao: 300 }
         };
 
-        // --- INICIALIZAR ---
         window.onload = () => {
             try {
                 if(window.supabase) {
                     supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-                    document.getElementById('statusSys').innerText = "Sistema Online ✅";
+                    document.getElementById('statusSys').innerText = "";
                 }
-            } catch(e) { document.getElementById('statusSys').innerText = "Modo Offline ⚠️"; }
+            } catch(e) { document.getElementById('statusSys').innerText = "Modo Offline"; }
 
             atualizarDatas();
             mudarDia('hoje');
             calc();
         };
 
-        // --- FUNÇÕES DE DATA E HORA ---
         function atualizarDatas() {
             const h = new Date();
             const a = new Date(); a.setDate(h.getDate()+1);
@@ -180,19 +184,19 @@
             document.getElementById('btnHoje').className = dia === 'hoje' ? 'd-btn active' : 'd-btn';
             document.getElementById('btnAmanha').className = dia === 'amanha' ? 'd-btn active' : 'd-btn';
             horaSel = null;
-            
             await gerarGrid();
         }
 
+        // --- AQUI ESTÁ A LÓGICA CORRIGIDA DOS HORÁRIOS ---
         async function gerarGrid() {
             const grid = document.getElementById('gridHoras');
-            grid.innerHTML = '<div style="color:#888; font-size:0.8rem;">Verificando...</div>';
+            grid.innerHTML = '<div style="color:#888; font-size:0.8rem;">Verificando disponibilidade...</div>';
 
-            // 1. Hora Atual
             const agora = new Date();
             const horaAtual = agora.getHours();
+            const minAtual = agora.getMinutes();
 
-            // 2. Busca ocupados no Banco
+            // Busca Ocupados
             let ocupados = [];
             const dataStr = getDataFormatada(diaSel);
             
@@ -205,10 +209,20 @@
 
             grid.innerHTML = '';
             
-            // Botão Encaixe (Sempre Livre)
-            grid.innerHTML += `<div class="h-btn" style="border:1px solid var(--gold); color:var(--gold);" onclick="selectHora(this, 'Encaixe')">ENCAIXE</div>`;
+            // --- BOTÃO ENCAIXE INTELIGENTE ---
+            // Se for hoje e já passou das 18h (loja fechou), o encaixe também fica riscado
+            let encaixeDisabled = false;
+            if (diaSel === 'hoje' && horaAtual >= 18) {
+                encaixeDisabled = true;
+            }
+            
+            const encaixeClass = encaixeDisabled ? 'h-btn disabled' : 'h-btn';
+            const encaixeAction = encaixeDisabled ? '' : `onclick="selectHora(this, 'Encaixe')"`;
+            const encaixeStyle = encaixeDisabled ? '' : 'border:1px solid var(--gold); color:var(--gold);';
+            
+            grid.innerHTML += `<div class="${encaixeClass}" style="${encaixeStyle}" ${encaixeAction}>ENCAIXE</div>`;
 
-            // Loop de horas (08:00 as 18:00)
+            // --- LOOP DE HORÁRIOS (08:00 as 18:00) ---
             let min = 8 * 60; 
             while (min < 18 * 60) {
                 const h = Math.floor(min / 60);
@@ -218,36 +232,44 @@
                 let classe = 'h-btn';
                 let travado = false;
 
-                // TRAVA 1: Horário Passado (Se for hoje)
+                // 1. VERIFICA SE PASSOU DA HORA (RELÓGIO)
                 if (diaSel === 'hoje') {
-                    if (h < horaAtual || (h === horaAtual && m < agora.getMinutes())) {
-                        classe += ' disabled';
+                    // Se a hora do botão for menor que a atual
+                    if (h < horaAtual) { 
+                        travado = true;
+                    }
+                    // Se for a mesma hora, mas passou os minutos (ex: agora 14:15, botão 14:00 trava)
+                    else if (h === horaAtual && m < minAtual) {
                         travado = true;
                     }
                 }
 
-                // TRAVA 2: Ocupado no Banco
+                // 2. VERIFICA SE TEM GENTE (BANCO DE DADOS)
                 if (ocupados.includes(txt)) {
-                    classe += ' taken';
                     travado = true;
+                }
+
+                // APLICA O ESTILO "RISCADO" (DISABLED)
+                if (travado) {
+                    classe += ' disabled';
                 }
 
                 const action = travado ? '' : `onclick="selectHora(this, '${txt}')"`;
                 grid.innerHTML += `<div class="${classe}" ${action}>${txt}</div>`;
                 
-                min += 60; // De 1 em 1 hora
+                min += 60; // Intervalos de 1 hora
             }
         }
 
         function selectHora(el, hora) {
             document.querySelectorAll('.h-btn').forEach(b => {
-                if(!b.classList.contains('disabled') && !b.classList.contains('taken')) b.classList.remove('selected');
+                // Remove seleção apenas dos ativos
+                if(!b.classList.contains('disabled')) b.classList.remove('selected');
             });
             el.classList.add('selected');
             horaSel = hora;
         }
 
-        // --- CÁLCULOS ---
         function calc() {
             const v = document.getElementById('veiculo').value;
             const s = document.getElementById('servico').value;
@@ -261,25 +283,23 @@
             return `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}`;
         }
 
-        // --- AGENDAR (AÇÃO PRINCIPAL) ---
         async function agendar() {
             const btn = document.getElementById('btnConfirmar');
             const nome = document.getElementById('nome').value;
 
-            if(!horaSel) return alert('Escolha um horário!');
+            if(!horaSel) return alert('Escolha um horário disponível!');
             if(!nome) return alert('Digite seu nome!');
 
             btn.innerText = "⏳ SALVANDO...";
             btn.disabled = true;
 
-            // Coleta dados
-            const veiculo = document.getElementById('veiculo').value.toUpperCase();
+            const veiculo = document.getElementById('veiculo').options[document.getElementById('veiculo').selectedIndex].text;
             const servico = document.getElementById('servico').options[document.getElementById('servico').selectedIndex].text;
             const valor = document.getElementById('total').innerText;
             const dataStr = getDataFormatada(diaSel);
             const pag = document.getElementById('pagamento').value;
 
-            // 1. TENTA SALVAR NO BANCO (EM SEGUNDO PLANO)
+            // SALVA NO BANCO (EM SEGUNDO PLANO)
             let idGerado = "APP-" + Math.floor(Math.random() * 10000);
             
             if(supabase) {
@@ -294,11 +314,11 @@
                         forma_pagamento: pag
                     }).select();
                     
-                    if(data && data[0]) idGerado = data[0].id.split('-')[0].toUpperCase();
-                } catch(e) { console.log("Erro banco", e); }
+                    if(data && data[0]) idGerado = data[0].id.split('-')[0].toUpperCase().substring(0, 6);
+                } catch(e) {}
             }
 
-            // 2. PREENCHE O COMPROVANTE
+            // PREENCHE COMPROVANTE
             document.getElementById('rNome').innerText = nome;
             document.getElementById('rData').innerText = dataStr;
             document.getElementById('rHora').innerText = horaSel;
@@ -307,11 +327,11 @@
             document.getElementById('rValor').innerText = valor;
             document.getElementById('rID').innerText = idGerado;
 
-            // 3. CONFIGURA BOTÃO DO ZAP
+            // GERA LINK ZAP
             const msgZap = `🧾 *COMPROVANTE*\n👤 ${nome}\n📅 ${dataStr} às ${horaSel}\n🚗 ${veiculo}\n🚿 ${servico}\n💰 ${valor}\n🆔 ${idGerado}`;
             document.getElementById('linkZap').href = `https://wa.me/5511960671570?text=${encodeURIComponent(msgZap)}`;
 
-            // 4. MOSTRA TELA FINAL
+            // ABRE MODAL
             document.getElementById('modalRecibo').style.display = 'flex';
             btn.innerText = "CONFIRMAR";
             btn.disabled = false;
