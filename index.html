@@ -3,93 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ImpérioCar-01 | Agendamento Online</title>
+    <title>ImpérioCar-01 | Agendamento</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800;900&display=swap" rel="stylesheet">
     
-    <!-- CONEXÃO COM O BANCO DE DADOS -->
+    <!-- SUPABASE -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
-        :root {
-            --gold: #FFD700; --gold-dark: #B8860B; --black: #0a0a0a;
-            --gray-dark: #141414; --gray-light: #2a2a2a;
-            --whatsapp: #25D366; --danger: #ff4444;
-        }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Montserrat', sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { background-color: var(--black); color: white; padding-bottom: 140px; }
+        :root { --gold: #FFD700; --black: #0a0a0a; --gray: #1a1a1a; --green: #25D366; }
+        body { background: var(--black); color: white; font-family: 'Montserrat', sans-serif; padding-bottom: 50px; margin:0; }
         
-        .header { background: linear-gradient(to bottom, rgba(0,0,0,0.7), var(--black)), url('https://images.unsplash.com/photo-1601362840469-51e4d8d58785?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'); background-size: cover; background-position: center; text-align: center; padding: 40px 20px 20px 20px; border-bottom: 3px solid var(--gold); }
-        .logo h1 { color: var(--gold); font-weight: 900; font-size: 1.8rem; text-transform: uppercase; }
-        .logo p { font-size: 0.8rem; letter-spacing: 2px; color: #ddd; }
+        .header { background: linear-gradient(to bottom, rgba(0,0,0,0.8), var(--black)), url('https://images.unsplash.com/photo-1601362840469-51e4d8d58785?w=800') center/cover; text-align: center; padding: 30px 20px; border-bottom: 2px solid var(--gold); }
+        .container { padding: 20px; max-width: 600px; margin: 0 auto; }
         
-        .container { width: 100%; max-width: 600px; margin: 0 auto; padding: 15px; }
+        .section-title { color: var(--gold); font-size: 0.9rem; font-weight: 800; margin: 20px 0 10px 0; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #333; padding-bottom: 5px; }
         
-        .gallery-container { position: relative; width: 100%; height: 220px; border-radius: 10px; overflow: hidden; border: 2px solid var(--gold); margin-bottom: 25px; background: #000; }
-        .gallery-slide { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 1s; object-fit: cover; }
-        .gallery-slide.active { opacity: 1; }
-        .gallery-caption { position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.7); color: var(--gold); padding: 5px 10px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; }
+        .date-selector { display: flex; gap: 10px; }
+        .date-btn { flex: 1; padding: 15px; background: var(--gray); border: 1px solid #444; color: #ccc; border-radius: 8px; cursor: pointer; text-align: center; }
+        .date-btn.selected { background: var(--gold); color: black; font-weight: bold; border-color: var(--gold); }
+        
+        .time-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 10px; }
+        .time-btn { padding: 10px; background: var(--gray); border: 1px solid #444; color: white; border-radius: 6px; text-align: center; font-size: 0.85rem; cursor: pointer; }
+        .time-btn.selected { background: var(--gold); color: black; font-weight: bold; }
+        .time-btn.disabled { background: #111; color: #444; text-decoration: line-through; cursor: not-allowed; border-color: #222; }
+        .time-btn.occupied { background: #500; color: #f99; border-color: #f00; cursor: not-allowed; opacity: 0.7; }
 
-        .section-title { font-size: 1rem; color: var(--gold); margin: 25px 0 10px 0; text-transform: uppercase; font-weight: 800; display: flex; align-items: center; gap: 10px; }
-        .section-title::after { content: ''; flex: 1; height: 1px; background: #333; }
+        select, input { width: 100%; padding: 15px; background: var(--gray); border: 1px solid #333; color: white; border-radius: 8px; font-size: 1rem; margin-bottom: 10px; outline: none; }
         
-        .date-selector { display: flex; gap: 10px; margin-bottom: 15px; }
-        .date-btn { flex: 1; padding: 15px; background-color: var(--gray-light); border: 1px solid #444; color: #ccc; border-radius: 8px; font-weight: bold; font-size: 0.9rem; text-transform: uppercase; cursor: pointer; }
-        .date-btn.selected { background-color: var(--gold); color: var(--black); border-color: var(--gold); }
+        .service-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: var(--gray); border: 1px solid #333; border-radius: 8px; margin-bottom: 8px; }
+        .service-item input { width: auto; margin: 0 10px 0 0; transform: scale(1.3); accent-color: var(--gold); }
+
+        .btn-main { background: var(--gold); color: black; width: 100%; padding: 18px; border: none; border-radius: 50px; font-weight: 900; font-size: 1.1rem; margin-top: 20px; cursor: pointer; text-transform: uppercase; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3); }
         
-        .time-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; min-height: 80px; }
-        .time-btn { background-color: var(--gray-light); border: 1px solid #444; color: #ccc; padding: 12px 5px; border-radius: 6px; font-size: 0.85rem; cursor: pointer; text-align: center; }
-        .time-btn.selected { background-color: var(--gold); color: var(--black); font-weight: 900; border-color: var(--gold); }
-        .time-btn.disabled { background-color: #111; color: #444; border-color: #222; cursor: not-allowed; text-decoration: line-through; }
-        
-        select, .payment-select { width: 100%; padding: 15px; background-color: var(--gray-light); border: 1px solid #333; color: white; border-radius: 8px; font-size: 1rem; margin-bottom: 10px; }
-        .service-item { display: flex; justify-content: space-between; align-items: center; background-color: var(--gray-light); padding: 15px; border-radius: 10px; border: 1px solid #333; margin-bottom: 10px; }
-        .service-item input { transform: scale(1.3); accent-color: var(--gold); margin-right: 10px;}
-        .price-tag { color: var(--gold); font-weight: bold; }
-        
-        .sticky-footer { position: fixed; bottom: 0; left: 0; width: 100%; background-color: rgba(0,0,0,0.95); padding: 15px; border-top: 1px solid #333; display: flex; flex-direction: column; align-items: center; z-index: 100; }
-        
-        /* BOTÃO PRINCIPAL AGORA É DOURADO */
-        .btn-confirmar { background-color: var(--gold); color: var(--black); text-decoration: none; padding: 16px; border-radius: 50px; font-weight: 900; width: 100%; text-align: center; display: block; border: none; font-size: 1.1rem; cursor: pointer; text-transform: uppercase; box-shadow: 0 0 15px rgba(255, 215, 0, 0.4); }
-        
-        /* ADMIN MODAL */
-        .modal-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:2000; align-items:center; justify-content:center; }
-        .modal-content { background:#1a1a1a; padding:20px; border:2px solid var(--gold); width:90%; max-width:400px; text-align:center; border-radius:10px; max-height: 80vh; overflow-y: auto;}
-        .admin-input { width:100%; padding:10px; margin:10px 0; background:#333; border:1px solid #555; color:white; }
-        .admin-btn { background:var(--gold); border:none; padding:10px; width:100%; font-weight:bold; margin-top:5px; cursor:pointer; }
-        
-        .admin-photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-top: 10px; }
-        .admin-photo-item { position: relative; height: 60px; }
-        .admin-photo-item img { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; border: 1px solid #444; }
-        .delete-btn { position: absolute; top:0; right:0; background:red; color:white; border:none; width:20px; height:20px; font-size:10px; cursor:pointer;}
+        /* === MODAL DE COMPROVANTE (IMPORTANTE) === */
+        .modal-overlay { 
+            display: none; /* Começa escondido */
+            position: fixed; top:0; left:0; width:100%; height:100%; 
+            background:rgba(0,0,0,0.95); z-index: 9999; 
+            align-items: center; justify-content: center; 
+        }
+        .receipt-card { background: white; color: black; width: 90%; max-width: 350px; border-radius: 15px; padding: 0; overflow: hidden; box-shadow: 0 0 30px rgba(255,215,0,0.5); border: 4px solid var(--gold); }
+        .receipt-header { background: var(--gold); padding: 20px; text-align: center; font-weight: 900; font-size: 1.2rem; }
+        .receipt-body { padding: 20px; font-size: 0.9rem; line-height: 1.6; }
+        .receipt-row { display: flex; justify-content: space-between; border-bottom: 1px dashed #ccc; padding: 8px 0; }
+        .receipt-btn { background: var(--green); color: white; border: none; width: 100%; padding: 18px; font-weight: bold; font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; text-decoration: none;}
     </style>
 </head>
 <body>
 
     <div class="header">
-        <div class="logo" id="crownLogo">
-            <i class="fas fa-crown" style="color: var(--gold); font-size: 2.5rem; margin-bottom: 10px;"></i>
-            <h1>ImpérioCar-01</h1>
-            <p>LAVA-RÁPIDO & ESTÉTICA</p>
-        </div>
+        <i class="fas fa-crown" style="color: var(--gold); font-size: 2rem;"></i>
+        <h2 style="color: var(--gold); margin: 5px 0;">ImpérioCar-01</h2>
+        <p style="color: #ccc; margin: 0; font-size: 0.8rem;">AGENDAMENTO INTELIGENTE</p>
     </div>
 
     <div class="container">
-        <!-- VITRINE -->
-        <div class="section-title">VITRINE (VEÍCULOS PRONTOS)</div>
-        <div class="gallery-container" id="galleryContainer"></div>
-
-        <div style="background:rgba(184,134,11,0.15); border:1px solid var(--gold-dark); padding:15px; border-radius:8px; font-size:0.85rem; margin-bottom:20px; text-align:center; color:#ddd;">
-            <i class="fas fa-check-circle"></i> Agendamento direto pelo sistema.
-        </div>
-
-        <div class="section-title">ESCOLHA O DIA</div>
+        
+        <div class="section-title">1. ESCOLHA O DIA</div>
         <div class="date-selector">
-            <button class="date-btn selected" id="btnToday" onclick="mudarData('hoje')">HOJE<br><span id="labelToday" style="font-size:0.7rem">--/--</span></button>
-            <button class="date-btn" id="btnTomorrow" onclick="mudarData('amanha')">AMANHÃ<br><span id="labelTomorrow" style="font-size:0.7rem">--/--</span></button>
+            <button class="date-btn selected" id="btnToday" onclick="mudarData('hoje')">HOJE<br><span id="labelToday">--/--</span></button>
+            <button class="date-btn" id="btnTomorrow" onclick="mudarData('amanha')">AMANHÃ<br><span id="labelTomorrow">--/--</span></button>
         </div>
 
-        <div class="section-title">VEÍCULO</div>
+        <div class="section-title">2. SEU VEÍCULO</div>
         <select id="carSize" onchange="calcular()">
             <option value="pequeno">Carro Pequeno (Hatch)</option>
             <option value="medio" selected>Carro Médio (Sedan)</option>
@@ -97,372 +74,231 @@
             <option value="moto">Moto</option>
         </select>
 
-        <div class="section-title">HORÁRIO</div>
-        <div class="time-grid" id="gridHorarios"></div>
-        
-        <div class="section-title">SERVIÇO</div>
+        <div class="section-title">3. HORÁRIO</div>
+        <div class="time-grid" id="gridHorarios">Carregando...</div>
+
+        <div class="section-title">4. SERVIÇO</div>
         <div id="listaServicos"></div>
 
-        <div class="section-title">PAGAMENTO</div>
-        <select id="pagamento" onchange="calcular()">
-            <option value="Pix">Pix</option>
+        <div class="section-title">5. FINALIZAR</div>
+        <input type="text" id="nomeCliente" placeholder="Seu Nome Completo">
+        <select id="pagamento">
+            <option value="Pix">Pagamento via Pix</option>
             <option value="Cartão">Cartão Crédito/Débito</option>
             <option value="Dinheiro">Dinheiro</option>
         </select>
-        
-        <!-- Campo Nome do Cliente (IMPORTANTE AGORA QUE NÃO TEM ZAP) -->
-        <div class="section-title">SEU NOME</div>
-        <input type="text" id="nomeCliente" placeholder="Digite seu nome aqui..." style="width: 100%; padding: 15px; background-color: var(--gray-light); border: 1px solid #333; color: white; border-radius: 8px; font-size: 1rem; margin-bottom: 10px;">
 
-        <div style="height: 20px;"></div>
-        <div style="text-align:center; font-size:0.8rem; color:#666;">Rua Giovanni Segantini, 257A<br>José Bonifácio - SP</div>
-    </div>
-
-    <div class="sticky-footer">
-        <div style="color:#ccc; margin-bottom:5px;">Total: <span id="valorTotal" style="color:var(--gold); font-weight:900; font-size:1.3rem;">R$ 0,00</span></div>
-        <button id="btnAgendar" class="btn-confirmar">CONFIRMAR AGENDAMENTO</button>
-    </div>
-
-    <!-- PAINÉIS ADMIN -->
-    <div id="modalLogin" class="modal-overlay">
-        <div class="modal-content">
-            <h3>ÁREA ADMIN</h3>
-            <input type="password" id="senhaAdmin" class="admin-input" placeholder="Senha">
-            <button onclick="logarAdmin()" class="admin-btn">ENTRAR</button>
-            <button onclick="document.getElementById('modalLogin').style.display='none'" class="admin-btn" style="background:#444; color:white;">FECHAR</button>
+        <div style="text-align: center; margin-top: 20px;">
+            <span style="color:#888;">Total a Pagar:</span><br>
+            <span id="valorTotal" style="color:var(--gold); font-size: 2rem; font-weight: 900;">R$ 0,00</span>
         </div>
+
+        <button id="btnAgendar" class="btn-main" onclick="gerarComprovante()">CONFIRMAR AGENDAMENTO</button>
     </div>
-    
-    <div id="painelAdmin" class="modal-overlay">
-        <div class="modal-content">
-            <h3>PAINEL DE CONTROLE</h3>
-            <div style="text-align:left; border-bottom:1px solid #444; padding-bottom:15px; margin-bottom:15px;">
-                <h4 style="color:white; margin-bottom:5px;">📸 Fotos da Vitrine</h4>
-                <label for="fileInput" class="admin-btn" style="background:#444; color:white; font-size:0.9rem;">
-                    <i class="fas fa-images"></i> ADICIONAR FOTOS
-                </label>
-                <input type="file" id="fileInput" accept="image/*" multiple style="display:none;" onchange="handleFileUpload(this)">
-                <div id="adminPhotoGrid" class="admin-photo-grid"></div>
+
+    <!-- COMPROVANTE (MODAL) -->
+    <div id="modalComprovante" class="modal-overlay">
+        <div class="receipt-card">
+            <div class="receipt-header">✅ AGENDADO!</div>
+            <div class="receipt-body">
+                <div class="receipt-row"><span>Cliente:</span> <strong id="recNome">--</strong></div>
+                <div class="receipt-row"><span>Data:</span> <strong id="recData">--</strong></div>
+                <div class="receipt-row"><span>Horário:</span> <strong id="recHora">--</strong></div>
+                <div class="receipt-row"><span>Veículo:</span> <strong id="recCarro">--</strong></div>
+                <div class="receipt-row"><span>Serviço:</span> <strong id="recServico">--</strong></div>
+                <div class="receipt-row"><span>Valor:</span> <strong id="recValor" style="color:green">--</strong></div>
+                
+                <div style="margin-top: 15px; font-size: 0.8rem; text-align: center; background:#eee; padding:5px; border-radius:4px;">
+                    Protocolo: <strong id="recID">GERANDO...</strong>
+                </div>
             </div>
-            <div id="editorPrecos" style="text-align:left; max-height:200px; overflow-y:scroll; border-bottom:1px solid #444; margin-bottom:10px;"></div>
-            <button onclick="salvarPrecos()" class="admin-btn">SALVAR ALTERAÇÕES</button>
-            <button onclick="document.getElementById('painelAdmin').style.display='none'" class="admin-btn" style="background:#c00; color:white;">SAIR</button>
+            <button id="btnZapFinal" class="receipt-btn" onclick="enviarZap()">
+                <i class="fab fa-whatsapp"></i> ENVIAR NO WHATSAPP
+            </button>
+            <button onclick="location.reload()" style="width:100%; padding:15px; background:#333; color:white; border:none; cursor:pointer;">FECHAR</button>
         </div>
     </div>
 
     <script>
-        // --- 1. CONEXÃO COM O BANCO DE DADOS ---
+        // --- 1. CONFIGURAÇÃO (SUAS CHAVES) ---
         const supabaseUrl = 'https://jmivkvtebtjudqhvgc.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptaXZrdmV0ZWJ0anVkcWh2dmdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ2MjIzMTYsImV4cCI6MjA4MDE5ODMxNn0.WtPrTn0Kvx6o_h_ZfNoAcQGjNDErr0NqT0wt60YLlo0';
         let supabase = null;
+        try { supabase = window.supabase.createClient(supabaseUrl, supabaseKey); } catch(e){}
 
-        try {
-            if (window.supabase) {
-                supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-                console.log("Banco conectado!");
-            }
-        } catch (e) {
-            console.error("Erro Supabase", e);
-        }
-
-        // --- 2. VARIÁVEIS GLOBAIS ---
+        // --- 2. DADOS ---
         let diaSelecionado = 'hoje';
         let horaSelecionada = null;
         
-        const defaultPrices = {
+        const precos = {
             moto: { ducha: 20, simples: 30, cera: 40, higienizacao: 100 },
             pequeno: { ducha: 30, simples: 45, cera: 60, higienizacao: 200 },
             medio: { ducha: 35, simples: 50, cera: 70, higienizacao: 250 },
             grande: { ducha: 50, simples: 70, cera: 90, higienizacao: 300 }
         };
-        const defaultPhotos = [
-            "https://images.unsplash.com/photo-1601362840469-51e4d8d58785?w=600&q=80",
-            "https://images.unsplash.com/photo-1520340356584-7c903ccf70dc?w=600&q=80"
-        ];
         
-        let precos = JSON.parse(localStorage.getItem('precosImperio')) || defaultPrices;
-        let galleryPhotos = JSON.parse(localStorage.getItem('imperioPhotos')) || defaultPhotos;
-        let currentSlide = 0;
-        let slideInterval;
-        
-        const servicosOpcoes = [
-            { id: 'ducha', nome: 'Só Ducha', desc: 'Externa Rápida' },
-            { id: 'simples', nome: 'Lavagem Simples', desc: 'Int/Ext + Aspirar' },
-            { id: 'cera', nome: 'Lavagem c/ Cera', desc: 'Completa + Cera' },
-            { id: 'higienizacao', nome: 'Higienização', desc: 'Interna Profunda' }
+        const servicos = [
+            {id: 'ducha', nome: 'Só Ducha'},
+            {id: 'simples', nome: 'Lavagem Simples', padrao: true},
+            {id: 'cera', nome: 'Lavagem c/ Cera'},
+            {id: 'higienizacao', nome: 'Higienização'}
         ];
 
-        // --- 3. INICIALIZAR ---
+        // --- 3. INÍCIO ---
         window.onload = function() {
-            initGallery();
-            renderizarDatas();
-            renderizarServicos();
-            gerarHorariosSimples(); 
+            renderDatas();
+            renderServicos();
+            mudarData('hoje'); 
             calcular();
-            initAdminTrigger();
-            
-            const btn = document.getElementById('btnAgendar');
-            if(btn) btn.onclick = processarAgendamento;
         };
 
-        // --- 4. FUNÇÃO DE AGENDAMENTO (NOVO: SALVA E AVISA NA TELA) ---
-        async function processarAgendamento(e) {
-            e.preventDefault();
-            const btn = document.getElementById('btnAgendar');
-            const nomeCliente = document.getElementById('nomeCliente').value;
-
-            // 1. Validação
-            if (!horaSelecionada && horaSelecionada !== 'Encaixe') {
-                alert("⚠️ Por favor, escolha um horário na lista.");
-                return;
-            }
-            if (nomeCliente.trim() === "") {
-                alert("⚠️ Por favor, digite seu nome.");
-                document.getElementById('nomeCliente').focus();
-                return;
-            }
-
-            // 2. Trava botão
-            btn.innerText = "💾 Agendando...";
-            btn.disabled = true;
-
-            // 3. Prepara dados
-            const tamanho = document.getElementById('carSize').value;
-            const servicoRadio = document.querySelector('input[name="servico"]:checked');
-            const servicoNome = servicoOpcoes.find(s => s.id === servicoRadio.value).nome;
-            const valor = document.getElementById('valorTotal').innerText.replace('R$ ', '');
-            const pag = document.getElementById('pagamento').value;
-            const dataStr = getDataFormatada(diaSelecionado);
-            const horaMsg = horaSelecionada || "Encaixe";
-
-            // 4. Salva no Banco
-            if (supabase) {
-                try {
-                    const { error } = await supabase.from('agendamentos_imperio').insert({
-                        cliente_nome: nomeCliente, // Campo novo que precisamos usar
-                        data_escolhida: dataStr,
-                        horario: horaMsg,
-                        tamanho_carro: tamanho,
-                        servico_nome: servicoNome,
-                        valor_cobrado: parseFloat(valor.replace(',', '.')),
-                        forma_pagamento: pag
-                    });
-
-                    if (error) {
-                        throw error;
-                    }
-
-                    // 5. SUCESSO!
-                    alert(`✅ AGENDAMENTO CONFIRMADO!\n\nOlá ${nomeCliente}, seu agendamento para ${dataStr} às ${horaMsg} foi realizado com sucesso.\n\nTe esperamos lá!`);
-                    
-                    // Recarrega a página para limpar
-                    location.reload();
-
-                } catch (erroBanco) {
-                    console.log(erroBanco);
-                    alert("❌ Erro ao salvar: " + erroBanco.message);
-                    btn.innerText = "TENTAR NOVAMENTE";
-                    btn.disabled = false;
-                }
-            } else {
-                alert("Erro grave: Banco de dados não conectado.");
-            }
-        }
-
-        // --- 5. LÓGICA DE INTERFACE ---
-        function getDataFormatada(tipo) {
+        // --- 4. GERAÇÃO DE HORÁRIOS COM TRAVA DE HORA PASSADA ---
+        function renderDatas() {
             const hoje = new Date();
             const amanha = new Date(hoje); amanha.setDate(hoje.getDate() + 1);
-            const diasSemana = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
-            const dataObj = tipo === 'hoje' ? hoje : amanha;
-            return `${dataObj.getDate().toString().padStart(2,'0')}/${(dataObj.getMonth()+1).toString().padStart(2,'0')} (${diasSemana[dataObj.getDay()]})`;
+            document.getElementById('labelToday').innerText = `${hoje.getDate()}/${hoje.getMonth()+1}`;
+            document.getElementById('labelTomorrow').innerText = `${amanha.getDate()}/${amanha.getMonth()+1}`;
         }
 
-        function renderizarDatas() {
-            const hoje = new Date();
-            const amanha = new Date(hoje); amanha.setDate(hoje.getDate() + 1);
-            const formatar = (d) => `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}`;
-            document.getElementById('labelToday').innerText = formatar(hoje);
-            document.getElementById('labelTomorrow').innerText = formatar(amanha);
+        async function mudarData(dia) {
+            diaSelecionado = dia;
+            document.getElementById('btnToday').className = dia === 'hoje' ? 'date-btn selected' : 'date-btn';
+            document.getElementById('btnTomorrow').className = dia === 'amanha' ? 'date-btn selected' : 'date-btn';
+            horaSelecionada = null;
+            await gerarHorarios(); 
         }
 
-        function renderizarServicos() {
-            const container = document.getElementById('listaServicos');
-            let html = '';
-            servicosOpcoes.forEach((svc, index) => {
-                const checked = index === 1 ? 'checked' : ''; 
-                html += `
-                <label class="service-item">
-                    <div style="display:flex; align-items:center;">
-                        <input type="radio" name="servico" value="${svc.id}" ${checked} onchange="calcular()">
-                        <div><span style="font-weight:bold;">${svc.nome}</span><br><span style="font-size:0.8rem; color:#888;">${svc.desc}</span></div>
-                    </div>
-                    <span class="price-tag" id="tag-${svc.id}">R$ 00</span>
-                </label>`;
-            });
-            container.innerHTML = html;
-        }
-
-        function mudarData(tipo) {
-            diaSelecionado = tipo;
-            document.getElementById('btnToday').className = tipo === 'hoje' ? 'date-btn selected' : 'date-btn';
-            document.getElementById('btnTomorrow').className = tipo === 'amanha' ? 'date-btn selected' : 'date-btn';
-            horaSelecionada = null; 
-            gerarHorariosSimples();
-            calcular();
-        }
-
-        function gerarHorariosSimples() {
+        async function gerarHorarios() {
             const grid = document.getElementById('gridHorarios');
+            grid.innerHTML = '<div style="color:#888; grid-column:1/-1; text-align:center;">Atualizando...</div>';
+
+            const agora = new Date();
+            const horaAtual = agora.getHours();
+            const dataStr = getDataFormatada(diaSelecionado);
+            
+            let ocupados = [];
+            // Busca no banco se possível
+            if(supabase) {
+                try {
+                    const { data } = await supabase.from('agendamentos_imperio').select('horario').eq('data_escolhida', dataStr);
+                    if(data) ocupados = data.map(x => x.horario);
+                } catch(e) {}
+            }
+
             grid.innerHTML = '';
-            grid.innerHTML += `<div class="time-btn" style="grid-column:1/-1; background:rgba(255,68,68,0.2); color:#ffaaaa; border:1px solid red;" onclick="selecionarHora(this, 'Encaixe')">ENCAIXE (Sem hora fixa)</div>`;
+            // Encaixe sempre livre
+            grid.innerHTML += `<div class="time-btn" style="border-color:var(--gold); color:var(--gold);" onclick="selectHora(this, 'Encaixe')">ENCAIXE</div>`;
 
-            let minutos = 8 * 60; 
-            const horaAtual = new Date().getHours();
-            const minAtual = new Date().getMinutes();
-
+            let minutos = 8 * 60; // 08:00
             while(minutos < 18 * 60) {
                 const h = Math.floor(minutos/60);
                 const m = minutos % 60;
-                const horaFormatada = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`;
+                const horaTxt = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`;
                 
-                let classeExtra = '';
-                let bloqueado = false;
+                let classe = 'time-btn';
+                let blocked = false;
+
+                // 1. Passou da hora?
                 if (diaSelecionado === 'hoje') {
-                    if (h < horaAtual || (h === horaAtual && m < minAtual)) {
-                        classeExtra = 'disabled'; bloqueado = true;
+                    if (h < horaAtual || (h === horaAtual && m < agora.getMinutes())) {
+                        classe += ' disabled'; blocked = true;
                     }
                 }
-                const clickAction = bloqueado ? '' : `onclick="selecionarHora(this, '${horaFormatada}')"`;
-                grid.innerHTML += `<div class="time-btn ${classeExtra}" ${clickAction}>${horaFormatada}</div>`;
-                minutos += 45;
+                // 2. Está ocupado no banco?
+                if (ocupados.includes(horaTxt)) {
+                    classe += ' occupied'; blocked = true;
+                }
+
+                const action = blocked ? '' : `onclick="selectHora(this, '${horaTxt}')"`;
+                grid.innerHTML += `<div class="${classe}" ${action}>${horaTxt}</div>`;
+                minutos += 60; 
             }
         }
 
-        function selecionarHora(el, hora) {
+        function selectHora(el, hora) {
             document.querySelectorAll('.time-btn').forEach(b => {
-                if(!b.classList.contains('disabled')) b.classList.remove('selected');
+                if(!b.classList.contains('disabled') && !b.classList.contains('occupied')) b.classList.remove('selected');
             });
             el.classList.add('selected');
             horaSelecionada = hora;
         }
 
-        function calcular() {
+        // --- 5. AÇÃO DE CONFIRMAR (ABRE MODAL PRIMEIRO) ---
+        async function gerarComprovante() {
+            const nome = document.getElementById('nomeCliente').value;
+            if(!horaSelecionada) return alert('Selecione um horário!');
+            if(!nome) return alert('Digite seu nome!');
+
+            // 1. PREENCHE O MODAL IMEDIATAMENTE (Feedback Instantâneo)
             const tamanho = document.getElementById('carSize').value;
-            const servicoRadio = document.querySelector('input[name="servico"]:checked');
-            const servicoId = servicoRadio ? servicoRadio.value : 'simples';
+            const servicoId = document.querySelector('input[name="svc"]:checked').value;
+            const servicoNome = servicos.find(s => s.id === servicoId).nome;
+            const valor = document.getElementById('valorTotal').innerText;
+            const dataStr = getDataFormatada(diaSelecionado);
             
-            servicosOpcoes.forEach(s => {
-                const valor = precos[tamanho][s.id];
-                document.getElementById(`tag-${s.id}`).innerText = `R$ ${valor}`;
-            });
-            const total = precos[tamanho][servicoId];
-            document.getElementById('valorTotal').innerText = `R$ ${total},00`;
+            document.getElementById('recNome').innerText = nome;
+            document.getElementById('recData').innerText = dataStr;
+            document.getElementById('recHora').innerText = horaSelecionada;
+            document.getElementById('recCarro').innerText = tamanho.toUpperCase();
+            document.getElementById('recServico').innerText = servicoNome;
+            document.getElementById('recValor').innerText = valor;
+            
+            // Abre o modal
+            document.getElementById('modalComprovante').style.display = 'flex';
+
+            // 2. TENTA SALVAR NO BANCO (EM SEGUNDO PLANO)
+            let idGerado = "OFFLINE-" + Math.floor(Math.random() * 10000);
+            
+            if(supabase) {
+                try {
+                    const { data } = await supabase.from('agendamentos_imperio').insert({
+                        cliente_nome: nome,
+                        data_escolhida: dataStr,
+                        horario: horaSelecionada,
+                        tamanho_carro: tamanho,
+                        servico_nome: servicoNome,
+                        valor_cobrado: parseFloat(valor.replace('R$ ','').replace(',','.')),
+                        forma_pagamento: document.getElementById('pagamento').value
+                    }).select();
+                    
+                    if(data && data[0]) idGerado = data[0].id.split('-')[0].toUpperCase();
+                } catch(e) { console.log("Erro banco", e); }
+            }
+            
+            // Atualiza o ID no modal com o valor real ou offline
+            document.getElementById('recID').innerText = idGerado;
         }
 
-        // --- 6. GALERIA E ADMIN ---
-        function initGallery() {
-            const container = document.getElementById('galleryContainer');
-            container.innerHTML = '';
-            if(galleryPhotos.length === 0) {
-                container.innerHTML = '<div style="color:white; display:flex; justify-content:center; align-items:center; height:100%;">Sem fotos na vitrine</div><div class="gallery-caption">Adicione fotos no Admin</div>';
-                return;
-            }
-            galleryPhotos.forEach((url, index) => {
-                const img = document.createElement('img');
-                img.src = url;
-                img.className = index === 0 ? 'gallery-slide active' : 'gallery-slide';
-                container.appendChild(img);
+        function enviarZap() {
+            const nome = document.getElementById('recNome').innerText;
+            const data = document.getElementById('recData').innerText;
+            const hora = document.getElementById('recHora').innerText;
+            const servico = document.getElementById('recServico').innerText;
+            const id = document.getElementById('recID').innerText;
+            const msg = `🧾 *COMPROVANTE*\n👤 ${nome}\n📅 ${data} às ${hora}\n🚿 ${servico}\n🆔 ${id}`;
+            window.location.href = `https://wa.me/5511960671570?text=${encodeURIComponent(msg)}`;
+        }
+
+        // --- EXTRAS ---
+        function renderServicos() {
+            const div = document.getElementById('listaServicos');
+            let html = '';
+            servicos.forEach(s => {
+                const check = s.padrao ? 'checked' : '';
+                html += `<label class="service-item"><span>${s.nome}</span><input type="radio" name="svc" value="${s.id}" ${check} onchange="calcular()"></label>`;
             });
-            const caption = document.createElement('div');
-            caption.className = 'gallery-caption';
-            caption.innerHTML = 'Resultado Final ✨';
-            container.appendChild(caption);
-            if (slideInterval) clearInterval(slideInterval);
-            if (galleryPhotos.length > 1) { slideInterval = setInterval(nextSlide, 3000); }
+            div.innerHTML = html;
         }
-        function nextSlide() {
-            const slides = document.querySelectorAll('.gallery-slide');
-            if (slides.length === 0) return;
-            slides[currentSlide].classList.remove('active');
-            currentSlide = (currentSlide + 1) % slides.length;
-            slides[currentSlide].classList.add('active');
+        function calcular() {
+            const tam = document.getElementById('carSize').value;
+            const svc = document.querySelector('input[name="svc"]:checked').value;
+            const val = precos[tam][svc];
+            document.getElementById('valorTotal').innerText = `R$ ${val},00`;
         }
-        let clicks = 0;
-        function initAdminTrigger() {
-            document.getElementById('crownLogo').onclick = () => {
-                clicks++;
-                if(clicks===5) { document.getElementById('modalLogin').style.display='flex'; clicks=0; }
-                setTimeout(()=>clicks=0, 2000);
-            };
-        }
-        function logarAdmin() {
-            if(document.getElementById('senhaAdmin').value === '#Ccjj9842$') {
-                document.getElementById('modalLogin').style.display='none';
-                document.getElementById('painelAdmin').style.display='flex';
-                montarEditorPrecos();
-                renderAdminPhotos();
-            } else alert('Senha errada');
-        }
-        function montarEditorPrecos() {
-            const div = document.getElementById('editorPrecos');
-            div.innerHTML = '';
-            for(let tam in precos) {
-                div.innerHTML += `<h4 style="color:var(--gold); margin-top:10px">${tam.toUpperCase()}</h4>`;
-                for(let s in precos[tam]) {
-                    div.innerHTML += `<div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                        <span>${s}</span>
-                        <input type="number" id="p-${tam}-${s}" value="${precos[tam][s]}" style="width:60px">
-                    </div>`;
-                }
-            }
-        }
-        function salvarPrecos() {
-            for(let tam in precos) { for(let s in precos[tam]) { precos[tam][s] = Number(document.getElementById(`p-${tam}-${s}`).value); } }
-            localStorage.setItem('precosImperio', JSON.stringify(precos));
-            localStorage.setItem('imperioPhotos', JSON.stringify(galleryPhotos));
-            alert('Tudo salvo!');
-            document.getElementById('painelAdmin').style.display='none';
-            calcular(); initGallery();
-        }
-        function renderAdminPhotos() {
-            const container = document.getElementById('adminPhotoGrid'); container.innerHTML = '';
-            galleryPhotos.forEach((url, index) => {
-                const div = document.createElement('div'); div.className = 'admin-photo-item';
-                div.innerHTML = `<img src="${url}"><button class="delete-btn" onclick="deletePhoto(${index})">X</button>`;
-                container.appendChild(div);
-            });
-        }
-        function deletePhoto(index) {
-            if(confirm('Apagar foto?')) { galleryPhotos.splice(index, 1); renderAdminPhotos(); }
-        }
-        async function handleFileUpload(input) {
-            if (input.files && input.files.length > 0) {
-                let processedCount = 0;
-                for(let i = 0; i < input.files.length; i++) {
-                    const file = input.files[i];
-                    try {
-                        const resizedBase64 = await compressImage(file);
-                        galleryPhotos.push(resizedBase64); processedCount++;
-                    } catch (err) { console.error("Erro", err); }
-                }
-                if(processedCount > 0) { renderAdminPhotos(); alert(`${processedCount} fotos prontas! Clique em SALVAR ALTERAÇÕES.`); }
-                input.value = '';
-            }
-        }
-        function compressImage(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader(); reader.readAsDataURL(file);
-                reader.onload = (event) => {
-                    const img = new Image(); img.src = event.target.result;
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas'); const maxWidth = 600;
-                        const scaleSize = maxWidth / img.width; canvas.width = maxWidth; canvas.height = img.height * scaleSize;
-                        const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        resolve(canvas.toDataURL('image/jpeg', 0.6));
-                    }; img.onerror = (err) => reject(err);
-                }; reader.onerror = (err) => reject(err);
-            });
+        function getDataFormatada(tipo) {
+            const d = new Date();
+            if(tipo === 'amanha') d.setDate(d.getDate() + 1);
+            return `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}`;
         }
     </script>
 </body>
