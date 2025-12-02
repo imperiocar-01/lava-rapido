@@ -5,13 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ImpérioCar | Agendamento</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- CORREÇÃO 1: Link da fonte sem espaço -->
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800;900&display=swap" rel="stylesheet">
     
-    <!-- SUPABASE -->
+    <!-- CORREÇÃO 2: Link do script sem espaço no final -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
-        :root { --gold: #FFD700; --black: #111; --gray: #222; --green: #25D366; }
+        :root { --gold: #FFD700; --black: #111; --gray: #222; --green: #25D366; --red: #ff4444; }
         * { box-sizing: border-box; font-family: 'Montserrat', sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background: var(--black); color: white; margin: 0; padding-bottom: 90px; }
 
@@ -27,11 +29,28 @@
         
         .time-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 10px; }
         .time-btn { padding: 12px 5px; background: var(--gray); border: 1px solid #444; color: white; border-radius: 6px; text-align: center; font-size: 0.85rem; cursor: pointer; transition: 0.2s; }
+        
         .time-btn.selected { background: var(--gold); color: black; font-weight: bold; transform: scale(1.05); }
         
-        /* ESTILOS DE BLOQUEIO */
-        .time-btn.disabled { background: #151515; color: #444; border-color: #222; text-decoration: line-through; pointer-events: none; }
-        .time-btn.occupied { background: #3a0000; color: #ff5555; border-color: #500; text-decoration: line-through; pointer-events: none; }
+        /* BLOQUEADO (Passou da hora OU Já tem dono) */
+        .time-btn.disabled { 
+            background: #151515; 
+            color: #444; 
+            border-color: #222; 
+            text-decoration: line-through; 
+            cursor: not-allowed; 
+            pointer-events: none; 
+        }
+        
+        /* DESTAQUE PARA OCUPADO */
+        .time-btn.occupied {
+            background: #3a0000;
+            color: #ff5555;
+            border-color: #500;
+            text-decoration: line-through;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
 
         select, input { width: 100%; padding: 15px; background: var(--gray); border: 1px solid #333; color: white; border-radius: 8px; font-size: 1rem; margin-bottom: 10px; outline: none; }
         
@@ -52,14 +71,13 @@
     </div>
 
     <div class="container">
-        <!-- DATA -->
+        <!-- CORREÇÃO 3: onclick chamando a função correta 'mudarDia' -->
         <div class="section-title">1. ESCOLHA O DIA</div>
         <div class="date-selector">
             <button class="date-btn selected" id="btnHoje" onclick="mudarDia('hoje')">HOJE<br><span id="labelToday">--/--</span></button>
-            <button class="date-btn" id="btnTomorrow" onclick="mudarData('amanha')">AMANHÃ<br><span id="labelTomorrow">--/--</span></button>
+            <button class="date-btn" id="btnTomorrow" onclick="mudarDia('amanha')">AMANHÃ<br><span id="labelTomorrow">--/--</span></button>
         </div>
 
-        <!-- VEICULO -->
         <div class="section-title">2. VEÍCULO</div>
         <select id="carSize" onchange="calcular()">
             <option value="pequeno">Carro Pequeno</option>
@@ -68,11 +86,9 @@
             <option value="moto">Moto</option>
         </select>
 
-        <!-- HORARIO -->
         <div class="section-title">3. HORÁRIO</div>
         <div class="time-grid" id="gridHorarios">Carregando...</div>
 
-        <!-- SERVIÇO -->
         <div class="section-title">4. SERVIÇO</div>
         <select id="servico" onchange="calcular()">
             <option value="ducha">Só Ducha</option>
@@ -81,17 +97,8 @@
             <option value="higienizacao">Higienização</option>
         </select>
 
-        <!-- NOME -->
         <div class="section-title">5. SEU NOME</div>
         <input type="text" id="nomeCliente" placeholder="Digite seu nome...">
-        
-        <!-- PAGAMENTO -->
-        <div class="section-title">6. PAGAMENTO</div>
-        <select id="pagamento">
-            <option>Pix</option>
-            <option>Cartão</option>
-            <option>Dinheiro</option>
-        </select>
         
         <div style="height: 20px;"></div>
     </div>
@@ -101,7 +108,6 @@
         <button id="btnConfirmar" class="confirm-btn" onclick="agendar()">CONFIRMAR</button>
     </div>
 
-    <!-- MODAL -->
     <div class="modal" id="modalRecibo">
         <div class="card">
             <div class="card-header">✅ AGENDADO!</div>
@@ -118,13 +124,13 @@
     </div>
 
     <script>
-        // --- CONFIGURAÇÃO ---
+        // CORREÇÃO 4: Link do Supabase SEM espaços
         const supabaseUrl = 'https://jmivkvtebtjudqhvgc.supabase.co';
         const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImptaXZrdmV0ZWJ0anVkcWh2dmdjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjQ2MjIzMTYsImV4cCI6MjA4MDE5ODMxNn0.WtPrTn0Kvx6o_h_ZfNoAcQGjNDErr0NqT0wt60YLlo0';
+        
         let supabase = null;
         try { supabase = window.supabase.createClient(supabaseUrl, supabaseKey); } catch(e){}
 
-        // --- DADOS ---
         let diaSel = 'hoje';
         let horaSel = null;
         const precos = {
@@ -134,10 +140,9 @@
             grande: { ducha: 50, simples: 70, cera: 90, higienizacao: 300 }
         };
 
-        // --- INICIALIZAR ---
         window.onload = () => {
             renderDatas();
-            mudarDia('hoje');
+            mudarDia('hoje'); // CORREÇÃO: Função inicia corretamente
             calcular();
         };
 
@@ -148,7 +153,7 @@
             document.getElementById('labelTomorrow').innerText = `${a.getDate()}/${a.getMonth()+1}`;
         }
 
-        // --- LÓGICA DE BLOQUEIO (AGORA VAI FUNCIONAR!) ---
+        // CORREÇÃO: Nome da função unificado para 'mudarDia'
         async function mudarDia(dia) {
             diaSel = dia;
             document.getElementById('btnHoje').className = dia === 'hoje' ? 'date-btn selected' : 'date-btn';
@@ -165,13 +170,12 @@
             const horaAtual = agora.getHours();
             const dataStr = getDataFormatada(diaSel);
             
-            // 1. LER BANCO DE DADOS (Agora funciona porque rodamos o SQL)
             let ocupados = [];
             if(supabase) {
                 try {
                     const { data } = await supabase.from('agendamentos_imperio')
                         .select('horario')
-                        .eq('data_escolhida', dataStr); // Filtra pela data
+                        .eq('data_escolhida', dataStr);
                     
                     if(data) ocupados = data.map(x => x.horario);
                 } catch(e) { console.log(e); }
@@ -179,14 +183,12 @@
 
             grid.innerHTML = '';
 
-            // Botão Encaixe (Trava se já passou das 18h de hoje)
             let encaixeTravado = (diaSel === 'hoje' && horaAtual >= 18);
             let encaixeClass = encaixeTravado ? 'time-btn disabled' : 'time-btn';
             let encaixeClick = encaixeTravado ? '' : `onclick="selectHora(this, 'Encaixe')"`;
             grid.innerHTML += `<div class="${encaixeClass}" style="border-color:var(--gold); color:var(--gold);" ${encaixeClick}>ENCAIXE</div>`;
 
-            // Loop das Horas
-            let min = 8 * 60; // 08:00
+            let min = 8 * 60; 
             while(min < 18 * 60) {
                 const h = Math.floor(min/60);
                 const m = min % 60;
@@ -195,19 +197,17 @@
                 let classe = 'time-btn';
                 let travado = false;
 
-                // A. Já passou da hora? (Só se for hoje)
                 if (diaSel === 'hoje') {
                     if (h < horaAtual || (h === horaAtual && m < agora.getMinutes())) {
                         travado = true;
                     }
                 }
 
-                // B. Já tem gente? (Olha a lista do banco)
                 if (ocupados.includes(txt)) {
                     travado = true;
-                    classe += ' occupied'; // Fica vermelho
+                    classe += ' occupied'; 
                 } else if (travado) {
-                    classe += ' disabled'; // Fica cinza
+                    classe += ' disabled'; 
                 }
 
                 const action = travado ? '' : `onclick="selectHora(this, '${txt}')"`;
@@ -225,7 +225,6 @@
             horaSel = hora;
         }
 
-        // --- SALVAR E GERAR COMPROVANTE ---
         async function agendar() {
             const btn = document.getElementById('btnConfirmar');
             const nome = document.getElementById('nomeCliente').value;
@@ -240,14 +239,11 @@
             const servico = document.getElementById('servico').options[document.getElementById('servico').selectedIndex].text;
             const valor = document.getElementById('valorTotal').innerText;
             const dataStr = getDataFormatada(diaSel);
-            const pag = document.getElementById('pagamento').value;
 
-            // 1. Salva no Banco (Para bloquear para os outros)
             let idGerado = "OFF-" + Math.floor(Math.random()*1000);
             
             if(supabase) {
                 try {
-                    // Verificação final antes de salvar
                     if (horaSel !== 'Encaixe') {
                         const { data: jaTem } = await supabase.from('agendamentos_imperio').select('id').eq('data_escolhida', dataStr).eq('horario', horaSel);
                         if (jaTem && jaTem.length > 0) {
@@ -265,14 +261,13 @@
                         tamanho_carro: tamanho,
                         servico_nome: servico,
                         valor_cobrado: parseFloat(valor.replace('R$ ','').replace(',','.')),
-                        forma_pagamento: pag
+                        forma_pagamento: "Site"
                     }).select();
                     
                     if(data && data[0]) idGerado = data[0].id.split('-')[0].toUpperCase().substring(0, 6);
                 } catch(e) {}
             }
 
-            // 2. Mostra Comprovante
             document.getElementById('rNome').innerText = nome;
             document.getElementById('rData').innerText = dataStr;
             document.getElementById('rHora').innerText = horaSel;
@@ -286,7 +281,6 @@
             btn.innerText = "CONFIRMAR"; btn.disabled = false;
         }
 
-        // --- EXTRAS ---
         function calcular() {
             const tam = document.getElementById('carSize').value;
             const svc = document.getElementById('servico').value;
