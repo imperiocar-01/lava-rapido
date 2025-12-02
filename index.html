@@ -15,6 +15,7 @@
             --gold: #FFD700; --gold-dark: #B8860B; --black: #0a0a0a;
             --gray-dark: #141414; --gray-light: #2a2a2a;
             --whatsapp: #25D366; --success: #4CAF50; --danger: #ff4444;
+            --warning: #ff9800; --info: #2196F3;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Montserrat', sans-serif; -webkit-tap-highlight-color: transparent; }
         body { background-color: var(--black); color: white; padding-bottom: 140px; }
@@ -41,11 +42,19 @@
         .date-btn.selected { background-color: var(--gold); color: var(--black); border-color: var(--gold); }
         
         .time-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; min-height: 80px; }
-        .time-btn { background-color: var(--gray-light); border: 1px solid #444; color: #ccc; padding: 12px 5px; border-radius: 6px; font-size: 0.85rem; cursor: pointer; text-align: center; transition: all 0.3s; }
+        .time-btn { background-color: var(--gray-light); border: 1px solid #444; color: #ccc; padding: 12px 5px; border-radius: 6px; font-size: 0.85rem; cursor: pointer; text-align: center; transition: all 0.3s; position: relative; }
         .time-btn.selected { background-color: var(--gold); color: var(--black); font-weight: 900; border-color: var(--gold); }
         .time-btn.disabled { background-color: #111; color: #444; border-color: #222; cursor: not-allowed; text-decoration: line-through; }
         .time-btn.booked { background-color: rgba(244, 67, 54, 0.3); color: #ff8a80; border-color: #f44336; cursor: not-allowed; }
-        .time-btn.booked::after { content: ' ✓ OCUPADO'; font-size: 0.7rem; color: #f44336; font-weight: bold; }
+        .time-btn.booked::after { content: ' ✓ AGENDADO'; font-size: 0.7rem; color: #f44336; font-weight: bold; position: absolute; bottom: 2px; right: 5px; }
+        .time-btn.reserving { background-color: rgba(255, 152, 0, 0.3); color: #ffcc80; border-color: #ff9800; cursor: not-allowed; animation: pulse 2s infinite; }
+        .time-btn.reserving::after { content: ' ⏳ AGENDANDO...'; font-size: 0.7rem; color: #ff9800; font-weight: bold; position: absolute; bottom: 2px; right: 5px; }
+        
+        @keyframes pulse {
+            0% { opacity: 0.6; }
+            50% { opacity: 1; }
+            100% { opacity: 0.6; }
+        }
         
         select, .payment-select { width: 100%; padding: 15px; background-color: var(--gray-light); border: 1px solid #333; color: white; border-radius: 8px; font-size: 1rem; margin-bottom: 10px; }
         .service-item { display: flex; justify-content: space-between; align-items: center; background-color: var(--gray-light); padding: 15px; border-radius: 10px; border: 1px solid #333; margin-bottom: 10px; }
@@ -66,7 +75,7 @@
         .message { padding: 15px; border-radius: 10px; margin: 15px 0; text-align: center; display: none; animation: fadeIn 0.5s; }
         .message.success { background-color: rgba(76, 175, 80, 0.2); border: 1px solid var(--success); color: #a5d6a7; }
         .message.error { background-color: rgba(244, 67, 54, 0.2); border: 1px solid var(--danger); color: #ffabab; }
-        .message.info { background-color: rgba(33, 150, 243, 0.2); border: 1px solid #2196F3; color: #90caf9; }
+        .message.info { background-color: rgba(33, 150, 243, 0.2); border: 1px solid var(--info); color: #90caf9; }
         
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(-10px); }
@@ -76,6 +85,16 @@
         /* MODAL DE CONFIRMAÇÃO */
         .confirmation-modal { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:2000; align-items:center; justify-content:center; animation: fadeIn 0.3s; }
         .confirmation-content { background:#1a1a1a; padding:25px; border:2px solid var(--gold); width:90%; max-width:400px; text-align:center; border-radius:10px; }
+        
+        /* LOADING OVERLAY */
+        .loading-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:3000; align-items:center; justify-content:center; }
+        .spinner { width: 50px; height: 50px; border: 5px solid var(--gray-light); border-top: 5px solid var(--gold); border-radius: 50%; animation: spin 1s linear infinite; }
+        
+        /* STATUS LEGEND */
+        .status-legend { display: flex; justify-content: space-between; margin: 10px 0 20px 0; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 8px; }
+        .status-item { display: flex; align-items: center; gap: 5px; }
+        .status-color { width: 15px; height: 15px; border-radius: 3px; }
+        .status-text { font-size: 0.7rem; color: #aaa; }
         
         /* ADMIN MODAL */
         .modal-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:2000; align-items:center; justify-content:center; }
@@ -87,22 +106,6 @@
         .admin-photo-item { position: relative; height: 60px; }
         .admin-photo-item img { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; border: 1px solid #444; }
         .delete-btn { position: absolute; top:0; right:0; background:red; color:white; border:none; width:20px; height:20px; font-size:10px; cursor:pointer;}
-        
-        /* ANIMAÇÃO DE SUCESSO */
-        .success-checkmark { width: 80px; height: 80px; margin: 0 auto; }
-        .check-icon { width: 80px; height: 80px; position: relative; border-radius: 50%; box-sizing: content-box; border: 4px solid var(--success); }
-        .check-icon::before { top: 3px; left: -2px; width: 30px; transform-origin: 100% 50%; border-radius: 100px 0 0 100px; }
-        .check-icon::after { top: 0; left: 30px; width: 60px; transform-origin: 0 50%; border-radius: 0 100px 100px 0; animation: rotate-circle 4.25s ease-in; }
-        .check-icon::before, .check-icon::after { content: ''; height: 100px; position: absolute; background: #1a1a1a; transform: rotate(-45deg); }
-        .icon-line { height: 5px; background-color: var(--success); display: block; border-radius: 2px; position: absolute; z-index: 10; }
-        .line-tip { top: 46px; left: 14px; width: 25px; transform: rotate(45deg); animation: icon-line-tip 0.75s; }
-        .line-long { top: 38px; right: 8px; width: 47px; transform: rotate(-45deg); animation: icon-line-long 0.75s; }
-        .icon-circle { top: -4px; left: -4px; z-index: 10; width: 80px; height: 80px; border-radius: 50%; position: absolute; box-sizing: content-box; border: 4px solid rgba(76, 175, 80, 0.5); }
-        .icon-fix { top: 8px; width: 5px; left: 26px; z-index: 1; height: 85px; position: absolute; transform: rotate(-45deg); background-color: #1a1a1a; }
-        
-        @keyframes rotate-circle { 0% { transform: rotate(-45deg); } 5% { transform: rotate(-45deg); } 12% { transform: rotate(-405deg); } 100% { transform: rotate(-405deg); } }
-        @keyframes icon-line-tip { 0% { width: 0; left: 1px; top: 19px; } 54% { width: 0; left: 1px; top: 19px; } 70% { width: 50px; left: -8px; top: 37px; } 84% { width: 17px; left: 21px; top: 48px; } 100% { width: 25px; left: 14px; top: 45px; } }
-        @keyframes icon-line-long { 0% { width: 0; right: 46px; top: 54px; } 65% { width: 0; right: 46px; top: 54px; } 84% { width: 55px; right: 0px; top: 35px; } 100% { width: 47px; right: 8px; top: 38px; } }
     </style>
 </head>
 <body>
@@ -119,12 +122,28 @@
         <!-- MENSAGEM -->
         <div id="messageContainer" class="message" style="display: none;"></div>
         
+        <!-- LEGENDA DE STATUS -->
+        <div class="status-legend">
+            <div class="status-item">
+                <div class="status-color" style="background-color: var(--gold);"></div>
+                <div class="status-text">DISPONÍVEL</div>
+            </div>
+            <div class="status-item">
+                <div class="status-color" style="background-color: #ff9800;"></div>
+                <div class="status-text">AGENDANDO</div>
+            </div>
+            <div class="status-item">
+                <div class="status-color" style="background-color: #f44336;"></div>
+                <div class="status-text">AGENDADO</div>
+            </div>
+        </div>
+        
         <!-- VITRINE -->
         <div class="section-title">VITRINE (VEÍCULOS PRONTOS)</div>
         <div class="gallery-container" id="galleryContainer"></div>
 
         <div style="background:rgba(184,134,11,0.15); border:1px solid var(--gold-dark); padding:15px; border-radius:8px; font-size:0.85rem; margin-bottom:20px; text-align:center; color:#ddd;">
-            <i class="fas fa-bolt" style="margin-right:5px; color:var(--gold);"></i> Agendamento <strong>CONFIRMADO NA HORA</strong> - Horário fica vermelho instantaneamente
+            <i class="fas fa-shield-alt" style="margin-right:5px; color:var(--gold);"></i> Sistema de agendamento <strong>PROFISSIONAL</strong> - Horários atualizados em tempo real
         </div>
 
         <div class="section-title">ESCOLHA O DIA</div>
@@ -163,25 +182,24 @@
         <button id="btnAgendar" class="btn-agendar">CONFIRMAR AGENDAMENTO</button>
     </div>
 
+    <!-- LOADING OVERLAY -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="spinner"></div>
+        <div style="margin-top:20px; color:var(--gold); font-weight:600;">Processando agendamento...</div>
+    </div>
+
     <!-- MODAL DE CONFIRMAÇÃO -->
     <div id="modalConfirmacao" class="confirmation-modal">
         <div class="confirmation-content">
-            <!-- Checkmark animado -->
-            <div class="success-checkmark">
-                <div class="check-icon">
-                    <span class="icon-line line-tip"></span>
-                    <span class="icon-line line-long"></span>
-                    <div class="icon-circle"></div>
-                    <div class="icon-fix"></div>
-                </div>
-            </div>
-            
+            <i class="fas fa-check-circle" style="color:var(--success); font-size:3.5rem; margin-bottom:15px;"></i>
             <h3 style="color:var(--gold); margin-bottom:10px;">AGENDAMENTO CONFIRMADO!</h3>
-            <p id="confirmacaoDetalhes" style="margin-bottom:20px; color:#ccc; line-height:1.5;"></p>
-            <div style="display:flex; gap:10px;">
-                <button onclick="fecharConfirmacao()" class="admin-btn" style="background:#333; color:white;">FECHAR</button>
+            <div id="confirmacaoDetalhes" style="margin-bottom:20px; color:#ccc; line-height:1.5; text-align:left; background:rgba(255,215,0,0.1); padding:15px; border-radius:8px;"></div>
+            <div style="display:flex; gap:10px; flex-direction: column;">
                 <button onclick="enviarWhatsApp()" class="admin-btn" style="background:var(--whatsapp); color:white;">
-                    <i class="fab fa-whatsapp"></i> ENVIAR PARA WHATSAPP
+                    <i class="fab fa-whatsapp"></i> RECEBER NO WHATSAPP
+                </button>
+                <button onclick="fecharConfirmacao()" class="admin-btn" style="background:#333; color:white;">
+                    <i class="fas fa-times"></i> FECHAR
                 </button>
             </div>
         </div>
@@ -236,6 +254,8 @@
         let horaSelecionada = null;
         let ultimoAgendamento = null;
         let horariosOcupados = {};
+        let reservasTemporarias = {};
+        let sessaoId = Date.now() + '_' + Math.random().toString(36).substr(2, 9);
         
         const defaultPrices = {
             moto: { ducha: 20, simples: 30, cera: 40, higienizacao: 100 },
@@ -261,37 +281,266 @@
         ];
 
         // ======================================================
-        // 3. INICIALIZAR
+        // 3. SISTEMA DE BLOQUEIO DE HORÁRIOS
         // ======================================================
-        window.onload = function() {
-            console.log("Página carregada, iniciando...");
+        // Esta função cria um lock no horário enquanto está sendo agendado
+        async function bloquearHorario(dataStr, horario) {
+            const chave = `${dataStr}|${horario}`;
+            
+            // Verificar se já está bloqueado
+            if (reservasTemporarias[chave]) {
+                const diff = Date.now() - reservasTemporarias[chave].timestamp;
+                // Se o bloqueio tem mais de 3 minutos, liberar
+                if (diff < 180000) { // 3 minutos
+                    return false;
+                }
+            }
+            
+            // Criar novo bloqueio
+            reservasTemporarias[chave] = {
+                timestamp: Date.now(),
+                sessaoId: sessaoId
+            };
+            
+            // Atualizar display
+            atualizarDisplayHorarios();
+            return true;
+        }
+
+        function liberarHorario(dataStr, horario) {
+            const chave = `${dataStr}|${horario}`;
+            delete reservasTemporarias[chave];
+            atualizarDisplayHorarios();
+        }
+
+        function verificarHorarioBloqueado(dataStr, horario) {
+            const chave = `${dataStr}|${horario}`;
+            if (!reservasTemporarias[chave]) return false;
+            
+            const diff = Date.now() - reservasTemporarias[chave].timestamp;
+            if (diff > 180000) { // 3 minutos
+                delete reservasTemporarias[chave];
+                return false;
+            }
+            
+            return reservasTemporarias[chave].sessaoId !== sessaoId;
+        }
+
+        // ======================================================
+        // 4. INICIALIZAR
+        // ======================================================
+        window.onload = async function() {
+            console.log("Iniciando sistema de agendamento...");
             initGallery();
             renderizarDatas();
             renderizarServicos();
-            carregarHorariosOcupados().then(() => {
-                gerarHorariosSimples();
-            });
+            
+            // Carregar horários ocupados
+            await carregarHorariosOcupados();
+            gerarHorariosSimples();
+            
             calcular();
             initAdminTrigger();
             
             // Configurar botão de agendamento
             const btn = document.getElementById('btnAgendar');
             if(btn) {
-                btn.onclick = confirmarAgendamento;
+                btn.onclick = iniciarAgendamento;
             }
             
-            // Atualizar horários a cada 10 segundos
-            setInterval(() => {
-                carregarHorariosOcupados().then(() => {
-                    if(document.getElementById('gridHorarios')) {
-                        gerarHorariosSimples();
-                    }
-                });
-            }, 10000);
+            // Limpar bloqueios antigos a cada minuto
+            setInterval(limparBloqueiosAntigos, 60000);
+            
+            // Atualizar horários a cada 30 segundos
+            setInterval(async () => {
+                await carregarHorariosOcupados();
+                atualizarDisplayHorarios();
+            }, 30000);
+            
+            console.log("Sistema pronto para agendamentos");
         };
 
+        function limparBloqueiosAntigos() {
+            const agora = Date.now();
+            for (const chave in reservasTemporarias) {
+                if (agora - reservasTemporarias[chave].timestamp > 180000) { // 3 minutos
+                    delete reservasTemporarias[chave];
+                }
+            }
+        }
+
         // ======================================================
-        // 4. FUNÇÕES DE VERIFICAÇÃO DE DISPONIBILIDADE
+        // 5. FUNÇÕES DE AGENDAMENTO - SISTEMA PROFISSIONAL
+        // ======================================================
+        async function iniciarAgendamento(e) {
+            if (e) e.preventDefault();
+            
+            // Validação básica
+            if (!horaSelecionada && horaSelecionada !== 'Encaixe') {
+                mostrarMensagem('error', '⚠️ Selecione um horário para continuar');
+                return;
+            }
+
+            const dataStr = getDataFormatada(diaSelecionado);
+            const horario = horaSelecionada;
+
+            // Verificar disponibilidade
+            if (horario !== 'Encaixe') {
+                // Verificar se já está agendado
+                if (verificarHorarioOcupado(dataStr, horario)) {
+                    mostrarMensagem('error', '❌ Este horário já foi agendado');
+                    return;
+                }
+                
+                // Verificar se está sendo agendado por outra pessoa
+                if (verificarHorarioBloqueado(dataStr, horario)) {
+                    mostrarMensagem('error', '⏳ Este horário está sendo reservado');
+                    return;
+                }
+                
+                // Tentar bloquear o horário
+                const bloqueado = await bloquearHorario(dataStr, horario);
+                if (!bloqueado) {
+                    mostrarMensagem('error', '❌ Não foi possível reservar este horário');
+                    return;
+                }
+            }
+
+            // Mostrar loading
+            document.getElementById('loadingOverlay').style.display = 'flex';
+            
+            try {
+                // Processar agendamento
+                const sucesso = await processarAgendamento(dataStr, horario);
+                
+                if (sucesso) {
+                    // Sucesso - mostrar confirmação
+                    setTimeout(() => {
+                        document.getElementById('loadingOverlay').style.display = 'none';
+                        mostrarConfirmacao();
+                    }, 1000);
+                } else {
+                    // Falha
+                    document.getElementById('loadingOverlay').style.display = 'none';
+                    if (horario !== 'Encaixe') {
+                        liberarHorario(dataStr, horario);
+                    }
+                }
+            } catch (error) {
+                console.error("Erro no agendamento:", error);
+                document.getElementById('loadingOverlay').style.display = 'none';
+                mostrarMensagem('error', '❌ Erro ao processar agendamento');
+                if (horario !== 'Encaixe') {
+                    liberarHorario(dataStr, horario);
+                }
+            }
+        }
+
+        async function processarAgendamento(dataStr, horario) {
+            try {
+                // Coletar dados do formulário
+                const tamanho = document.getElementById('carSize').value;
+                const servicoRadio = document.querySelector('input[name="servico"]:checked');
+                const servicoId = servicoRadio ? servicoRadio.value : 'simples';
+                const servico = servicosOpcoes.find(s => s.id === servicoId);
+                const valorTotal = document.getElementById('valorTotal').innerText;
+                const pag = document.getElementById('pagamento').value;
+                
+                // Para horários normais, verificar disponibilidade final
+                if (horario !== 'Encaixe') {
+                    const disponivel = await verificarDisponibilidadeFinal(dataStr, horario);
+                    if (!disponivel) {
+                        mostrarMensagem('error', '❌ Horário não disponível');
+                        return false;
+                    }
+                }
+                
+                // Salvar no banco de dados
+                const agendamentoId = await salvarAgendamentoNoBanco({
+                    data_escolhida: dataStr,
+                    horario: horario,
+                    tamanho_carro: tamanho,
+                    servico_nome: servico.nome,
+                    valor_cobrado: parseFloat(valorTotal.replace('R$ ', '').replace(',', '.')),
+                    forma_pagamento: pag
+                });
+                
+                if (!agendamentoId) {
+                    mostrarMensagem('error', '❌ Erro ao salvar agendamento');
+                    return false;
+                }
+                
+                // Atualizar cache local
+                if (!horariosOcupados[dataStr]) {
+                    horariosOcupados[dataStr] = {};
+                }
+                horariosOcupados[dataStr][horario] = true;
+                
+                // Limpar seleção
+                horaSelecionada = null;
+                document.querySelectorAll('.time-btn.selected').forEach(b => b.classList.remove('selected'));
+                
+                // Atualizar display
+                atualizarDisplayHorarios();
+                
+                return true;
+                
+            } catch (error) {
+                console.error("Erro ao processar agendamento:", error);
+                return false;
+            }
+        }
+
+        async function verificarDisponibilidadeFinal(dataStr, horario) {
+            if (!supabase) return true;
+            
+            try {
+                const { data, error } = await supabase
+                    .from('agendamentos_imperio')
+                    .select('id')
+                    .eq('data_escolhida', dataStr)
+                    .eq('horario', horario)
+                    .maybeSingle();
+                
+                if (error) throw error;
+                return !data; // Disponível se não encontrar registro
+            } catch (error) {
+                console.error("Erro na verificação:", error);
+                return false;
+            }
+        }
+
+        async function salvarAgendamentoNoBanco(dados) {
+            if (!supabase) {
+                // Fallback local
+                const id = 'LOCAL_' + Date.now();
+                ultimoAgendamento = { id, ...dados };
+                return id;
+            }
+            
+            try {
+                const { data, error } = await supabase
+                    .from('agendamentos_imperio')
+                    .insert([{
+                        ...dados,
+                        data_criacao: new Date().toISOString(),
+                        status: 'confirmado'
+                    }])
+                    .select()
+                    .single();
+                
+                if (error) throw error;
+                
+                ultimoAgendamento = data;
+                return data.id;
+            } catch (error) {
+                console.error("Erro ao salvar no banco:", error);
+                return null;
+            }
+        }
+
+        // ======================================================
+        // 6. FUNÇÕES DE DISPLAY E INTERFACE
         // ======================================================
         async function carregarHorariosOcupados() {
             if (!supabase) return;
@@ -304,7 +553,6 @@
                 const hojeStr = formatarDataParaBanco(hoje);
                 const amanhaStr = formatarDataParaBanco(amanha);
                 
-                // Buscar TODOS os agendamentos (sem status, todos são confirmados)
                 const { data, error } = await supabase
                     .from('agendamentos_imperio')
                     .select('data_escolhida, horario')
@@ -312,10 +560,7 @@
                 
                 if (error) throw error;
                 
-                // Limpar objeto de horários ocupados
                 horariosOcupados = {};
-                
-                // Organizar por data e horário
                 if (data) {
                     data.forEach(agendamento => {
                         if (!horariosOcupados[agendamento.data_escolhida]) {
@@ -324,10 +569,8 @@
                         horariosOcupados[agendamento.data_escolhida][agendamento.horario] = true;
                     });
                 }
-                
-                console.log("Horários ocupados carregados:", horariosOcupados);
             } catch (error) {
-                console.error("Erro ao carregar horários ocupados:", error);
+                console.error("Erro ao carregar horários:", error);
             }
         }
 
@@ -343,175 +586,99 @@
             return horariosOcupados[dataStr] && horariosOcupados[dataStr][horario];
         }
 
-        // ======================================================
-        // 5. FUNÇÃO DE AGENDAMENTO - CONFIRMAÇÃO AUTOMÁTICA
-        // ======================================================
-        async function confirmarAgendamento(e) {
-            if (e) e.preventDefault();
-            const btn = document.getElementById('btnAgendar');
-            
-            // 1. Validação
-            if (!horaSelecionada && horaSelecionada !== 'Encaixe') {
-                mostrarMensagem('error', '⚠️ Por favor, escolha um horário na lista.');
-                return;
-            }
-
-            const dataStr = getDataFormatada(diaSelecionado);
-            const horario = horaSelecionada;
-
-            // 2. Verificar se horário está ocupado (verificação local rápida)
-            if (verificarHorarioOcupado(dataStr, horario)) {
-                mostrarMensagem('error', '❌ Este horário já foi agendado. Por favor, escolha outro horário.');
-                return;
-            }
-
-            // 3. Feedback visual
-            const textoOriginal = btn.innerText;
-            btn.innerText = "⏳ Confirmando...";
-            btn.classList.add('loading');
-            btn.disabled = true;
-
-            try {
-                // 4. Coleta dados
-                const tamanho = document.getElementById('carSize').value;
-                const servicoRadio = document.querySelector('input[name="servico"]:checked');
-                const servicoId = servicoRadio ? servicoRadio.value : 'simples';
-                const servico = servicosOpcoes.find(s => s.id === servicoId);
-                const valorTotal = document.getElementById('valorTotal').innerText;
-                const pag = document.getElementById('pagamento').value;
-
-                // 5. Verificação FINAL no banco (última validação)
-                let disponivel = true;
-                if (supabase) {
-                    try {
-                        const { data: agendamentosExistentes, error } = await supabase
-                            .from('agendamentos_imperio')
-                            .select('id')
-                            .eq('data_escolhida', dataStr)
-                            .eq('horario', horario)
-                            .limit(1);
-                        
-                        if (error) throw error;
-                        if (agendamentosExistentes && agendamentosExistentes.length > 0) {
-                            disponivel = false;
-                        }
-                    } catch (erro) {
-                        console.error("Erro na verificação final:", erro);
-                        disponivel = false;
-                    }
-                }
-
-                if (!disponivel) {
-                    // Recarregar horários e atualizar tela
-                    await carregarHorariosOcupados();
-                    gerarHorariosSimples();
-                    
-                    mostrarMensagem('error', '❌ Este horário foi agendado por outro usuário. Atualizamos a lista, escolha outro horário.');
-                    btn.innerText = textoOriginal;
-                    btn.classList.remove('loading');
-                    btn.disabled = false;
-                    return;
-                }
-
-                // 6. Salva no Supabase (CONFIRMAÇÃO AUTOMÁTICA)
-                let agendamentoId = null;
-                if (supabase) {
-                    try {
-                        const { data, error } = await supabase
-                            .from('agendamentos_imperio')
-                            .insert({
-                                data_escolhida: dataStr,
-                                horario: horario,
-                                tamanho_carro: tamanho,
-                                servico_nome: servico.nome,
-                                valor_cobrado: parseFloat(valorTotal.replace('R$ ', '').replace(',', '.')),
-                                forma_pagamento: pag,
-                                data_criacao: new Date().toISOString()
-                            })
-                            .select();
-
-                        if (error) throw error;
-                        if (data && data.length > 0) {
-                            agendamentoId = data[0].id;
-                            ultimoAgendamento = data[0];
-                            
-                            // ATUALIZAÇÃO IMEDIATA LOCAL
-                            if (!horariosOcupados[dataStr]) {
-                                horariosOcupados[dataStr] = {};
-                            }
-                            horariosOcupados[dataStr][horario] = true;
-                            
-                            // Atualizar visualização IMEDIATAMENTE
-                            gerarHorariosSimples();
-                            
-                            console.log("Agendamento confirmado instantaneamente:", agendamentoId);
-                        }
-                    } catch (erro) {
-                        console.error("Erro ao salvar no banco:", erro);
-                        mostrarMensagem('error', '❌ Erro ao confirmar agendamento. Tente novamente.');
-                        btn.innerText = textoOriginal;
-                        btn.classList.remove('loading');
-                        btn.disabled = false;
-                        return;
-                    }
-                } else {
-                    // Fallback se Supabase não estiver disponível
-                    if (!horariosOcupados[dataStr]) {
-                        horariosOcupados[dataStr] = {};
-                    }
-                    horariosOcupados[dataStr][horario] = true;
-                    gerarHorariosSimples();
-                    agendamentoId = 'LOCAL_' + Date.now();
-                    ultimoAgendamento = {
-                        id: agendamentoId,
-                        data_escolhida: dataStr,
-                        horario: horario,
-                        tamanho_carro: tamanho,
-                        servico_nome: servico.nome,
-                        valor_cobrado: parseFloat(valorTotal.replace('R$ ', '').replace(',', '.')),
-                        forma_pagamento: pag
-                    };
-                }
-
-                // 7. Mostrar confirmação AUTOMATICAMENTE
-                setTimeout(() => {
-                    mostrarConfirmacao(agendamentoId, dataStr, horario, tamanho, servico.nome, valorTotal, pag);
-                }, 500);
-
-            } catch (error) {
-                console.error("Erro no agendamento:", error);
-                mostrarMensagem('error', '❌ Erro ao processar agendamento. Tente novamente.');
-            } finally {
-                // Restaurar botão após breve delay
-                setTimeout(() => {
-                    btn.innerText = textoOriginal;
-                    btn.classList.remove('loading');
-                    btn.disabled = false;
-                    
-                    // Limpar seleção
-                    horaSelecionada = null;
-                    document.querySelectorAll('.time-btn.selected').forEach(b => b.classList.remove('selected'));
-                    calcular();
-                }, 1000);
+        function atualizarDisplayHorarios() {
+            if (document.getElementById('gridHorarios')) {
+                gerarHorariosSimples();
             }
         }
 
-        function mostrarConfirmacao(id, data, horario, tamanho, servico, valor, pagamento) {
+        function gerarHorariosSimples() {
+            const grid = document.getElementById('gridHorarios');
+            if (!grid) return;
+            
+            grid.innerHTML = '';
+            const dataStr = getDataFormatada(diaSelecionado);
+            
+            // Botão de Encaixe
+            grid.innerHTML += `<div class="time-btn" style="grid-column:1/-1; background:rgba(255,68,68,0.2); color:#ffaaaa; border:1px solid red;" onclick="selecionarHora(this, 'Encaixe')">ENCAIXE (Sem hora fixa)</div>`;
+
+            let minutos = 8 * 60; 
+            const horaAtual = new Date().getHours();
+            const minAtual = new Date().getMinutes();
+            const hoje = diaSelecionado === 'hoje';
+
+            while(minutos < 18 * 60) {
+                const h = Math.floor(minutos/60);
+                const m = minutos % 60;
+                const horaFormatada = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`;
+                
+                let classeExtra = '';
+                let bloqueado = false;
+                
+                // Verificar se horário já passou (para hoje)
+                if (hoje) {
+                    if (h < horaAtual || (h === horaAtual && m < minAtual)) {
+                        classeExtra = 'disabled'; 
+                        bloqueado = true;
+                    }
+                }
+                
+                // Verificar se horário está ocupado
+                if (verificarHorarioOcupado(dataStr, horaFormatada)) {
+                    classeExtra = 'booked';
+                    bloqueado = true;
+                } 
+                // Verificar se está sendo reservado
+                else if (verificarHorarioBloqueado(dataStr, horaFormatada)) {
+                    classeExtra = 'reserving';
+                    bloqueado = true;
+                }
+                
+                const clickAction = bloqueado ? '' : `onclick="selecionarHora(this, '${horaFormatada}')"`;
+                grid.innerHTML += `<div class="time-btn ${classeExtra}" ${clickAction}>${horaFormatada}</div>`;
+                minutos += 45;
+            }
+        }
+
+        function selecionarHora(el, hora) {
+            const dataStr = getDataFormatada(diaSelecionado);
+            
+            // Verificar disponibilidade
+            if (hora !== 'Encaixe') {
+                if (verificarHorarioOcupado(dataStr, hora)) {
+                    mostrarMensagem('error', '❌ Este horário já foi agendado');
+                    return;
+                }
+                
+                if (verificarHorarioBloqueado(dataStr, hora)) {
+                    mostrarMensagem('error', '⏳ Este horário está sendo reservado');
+                    return;
+                }
+            }
+            
+            // Remover seleção anterior
+            document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('selected'));
+            
+            // Selecionar novo
+            el.classList.add('selected');
+            horaSelecionada = hora;
+            
+            // Feedback
+            esconderMensagem();
+        }
+
+        function mostrarConfirmacao() {
+            if (!ultimoAgendamento) return;
+            
             const detalhes = `
-                <div style="text-align:left; background:rgba(255,215,0,0.1); padding:15px; border-radius:8px; margin:15px 0;">
-                    <strong style="color:var(--gold);">📋 Código:</strong> <span style="color:white; font-weight:bold;">#${id || 'N/A'}</span><br>
-                    <strong style="color:var(--gold);">🗓 Data:</strong> ${data}<br>
-                    <strong style="color:var(--gold);">⏰ Horário:</strong> ${horario}<br>
-                    <strong style="color:var(--gold);">🚗 Veículo:</strong> ${tamanho.toUpperCase()}<br>
-                    <strong style="color:var(--gold);">🚿 Serviço:</strong> ${servico}<br>
-                    <strong style="color:var(--gold);">💰 Valor:</strong> ${valor}<br>
-                    <strong style="color:var(--gold);">💳 Pagamento:</strong> ${pagamento}
-                </div>
-                <p style="font-size:0.9rem; color:#aaa; margin-top:15px;">
-                    <i class="fas fa-check-circle" style="color:var(--success);"></i> 
-                    Agendamento <strong>CONFIRMADO</strong> instantaneamente!<br>
-                    <span style="color:#f44336">Este horário já aparece como OCUPADO para outros clientes</span>
-                </p>
+                <strong>📋 Código:</strong> ${ultimoAgendamento.id}<br>
+                <strong>🗓 Data:</strong> ${ultimoAgendamento.data_escolhida}<br>
+                <strong>⏰ Horário:</strong> ${ultimoAgendamento.horario}<br>
+                <strong>🚗 Veículo:</strong> ${ultimoAgendamento.tamanho_carro.toUpperCase()}<br>
+                <strong>🚿 Serviço:</strong> ${ultimoAgendamento.servico_nome}<br>
+                <strong>💰 Valor:</strong> R$ ${ultimoAgendamento.valor_cobrado}<br>
+                <strong>💳 Pagamento:</strong> ${ultimoAgendamento.forma_pagamento}<br><br>
+                <small style="color:#4CAF50;"><i class="fas fa-check-circle"></i> Agendamento confirmado com sucesso!</small>
             `;
             
             document.getElementById('confirmacaoDetalhes').innerHTML = detalhes;
@@ -520,21 +687,22 @@
 
         function fecharConfirmacao() {
             document.getElementById('modalConfirmacao').style.display = 'none';
+            calcular();
         }
 
         function enviarWhatsApp() {
             if (!ultimoAgendamento) return;
             
-            const msg = `👑 *AGENDAMENTO CONFIRMADO - ImpérioCar* 🚗\n\n📋 *Código:* ${ultimoAgendamento.id}\n🗓 *Data:* ${ultimoAgendamento.data_escolhida}\n⏰ *Horário:* ${ultimoAgendamento.horario}\n\n🚗 *Veículo:* ${ultimoAgendamento.tamanho_carro.toUpperCase()}\n🚿 *Serviço:* ${ultimoAgendamento.servico_nome}\n💰 *Valor:* R$ ${ultimoAgendamento.valor_cobrado}\n💳 *Pagamento:* ${ultimoAgendamento.forma_pagamento}\n\n📍 *Endereço:* Rua Giovanni Segantini, 257A - José Bonifácio/SP\n\n*Agendamento confirmado automaticamente no sistema. Obrigado!*`;
+            const msg = `👑 *AGENDAMENTO CONFIRMADO - ImpérioCar* 🚗\n\n📋 *Código:* ${ultimoAgendamento.id}\n🗓 *Data:* ${ultimoAgendamento.data_escolhida}\n⏰ *Horário:* ${ultimoAgendamento.horario}\n\n🚗 *Veículo:* ${ultimoAgendamento.tamanho_carro.toUpperCase()}\n🚿 *Serviço:* ${ultimoAgendamento.servico_nome}\n💰 *Valor:* R$ ${ultimoAgendamento.valor_cobrado}\n💳 *Pagamento:* ${ultimoAgendamento.forma_pagamento}\n\n📍 *Endereço:* Rua Giovanni Segantini, 257A - José Bonifácio/SP\n\n*Agendamento confirmado automaticamente. Obrigado!*`;
             const telefone = "5511960671570";
             const linkZap = `https://wa.me/${telefone}?text=${encodeURIComponent(msg)}`;
             
             window.open(linkZap, '_blank');
-            fecharConfirmacao();
+            // Não fecha o modal para o usuário poder copiar os dados
         }
 
         // ======================================================
-        // 6. FUNÇÕES DE TELA
+        // 7. FUNÇÕES AUXILIARES
         // ======================================================
         function getDataFormatada(tipo) {
             const hoje = new Date();
@@ -582,71 +750,6 @@
             calcular();
         }
 
-        function gerarHorariosSimples() {
-            const grid = document.getElementById('gridHorarios');
-            if (!grid) return;
-            
-            grid.innerHTML = '';
-            const dataStr = getDataFormatada(diaSelecionado);
-            
-            // Botão de Encaixe (sempre disponível)
-            grid.innerHTML += `<div class="time-btn" style="grid-column:1/-1; background:rgba(255,68,68,0.2); color:#ffaaaa; border:1px solid red;" onclick="selecionarHora(this, 'Encaixe')">ENCAIXE (Sem hora fixa)</div>`;
-
-            let minutos = 8 * 60; 
-            const horaAtual = new Date().getHours();
-            const minAtual = new Date().getMinutes();
-            const hoje = diaSelecionado === 'hoje';
-
-            while(minutos < 18 * 60) {
-                const h = Math.floor(minutos/60);
-                const m = minutos % 60;
-                const horaFormatada = `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`;
-                
-                let classeExtra = '';
-                let bloqueado = false;
-                
-                // Verificar se horário já passou (para hoje)
-                if (hoje) {
-                    if (h < horaAtual || (h === horaAtual && m < minAtual)) {
-                        classeExtra = 'disabled'; 
-                        bloqueado = true;
-                    }
-                }
-                
-                // Verificar se horário está ocupado
-                if (verificarHorarioOcupado(dataStr, horaFormatada)) {
-                    classeExtra = 'booked';
-                    bloqueado = true;
-                }
-                
-                const clickAction = bloqueado ? '' : `onclick="selecionarHora(this, '${horaFormatada}')"`;
-                grid.innerHTML += `<div class="time-btn ${classeExtra}" ${clickAction}>${horaFormatada}</div>`;
-                minutos += 45;
-            }
-        }
-
-        function selecionarHora(el, hora) {
-            // Verificar se já está ocupado
-            const dataStr = getDataFormatada(diaSelecionado);
-            
-            if (verificarHorarioOcupado(dataStr, hora)) {
-                mostrarMensagem('error', '❌ Este horário não está mais disponível.');
-                return;
-            }
-            
-            // Remove seleção de todos
-            document.querySelectorAll('.time-btn').forEach(b => {
-                b.classList.remove('selected');
-            });
-            
-            // Adiciona seleção no clicado
-            el.classList.add('selected');
-            horaSelecionada = hora;
-            
-            // Esconder mensagens anteriores
-            esconderMensagem();
-        }
-
         function calcular() {
             const tamanho = document.getElementById('carSize').value;
             const servicoRadio = document.querySelector('input[name="servico"]:checked');
@@ -664,9 +767,6 @@
             document.getElementById('valorTotal').innerText = `R$ ${total}`;
         }
 
-        // ======================================================
-        // 7. FUNÇÕES DE MENSAGEM
-        // ======================================================
         function mostrarMensagem(tipo, texto) {
             const messageDiv = document.getElementById('messageContainer');
             if (messageDiv) {
@@ -674,7 +774,6 @@
                 messageDiv.innerHTML = `<p><i class="fas fa-${tipo === 'success' ? 'check-circle' : tipo === 'error' ? 'exclamation-circle' : 'info-circle'}"></i> ${texto}</p>`;
                 messageDiv.style.display = 'block';
                 
-                // Auto-esconder após 5 segundos
                 setTimeout(() => {
                     if (messageDiv.style.display === 'block') {
                         esconderMensagem();
@@ -691,7 +790,7 @@
         }
 
         // ======================================================
-        // 8. GALERIA E ADMIN
+        // 8. GALERIA E ADMIN (mantidas)
         // ======================================================
         function initGallery() {
             const container = document.getElementById('galleryContainer');
